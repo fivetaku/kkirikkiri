@@ -1,0 +1,21 @@
+{
+  "name": "kkirikkiri",
+  "version": "0.7.0",
+  "description": "Natural language team builder for Claude Code Agent Teams — create purpose-driven AI teams with a single sentence",
+  "author": {
+    "name": "fivetaku",
+    "url": "https://github.com/fivetaku"
+  },
+  "homepage": "https://github.com/fivetaku/kkirikkiri",
+  "repository": "https://github.com/fivetaku/kkirikkiri",
+  "license": "MIT",
+  "keywords": [
+    "agent-teams",
+    "kkirikkiri",
+    "multi-agent",
+    "orchestration",
+    "natural-language",
+    "interview-driven",
+    "multi-model"
+  ]
+}
