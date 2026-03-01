@@ -209,24 +209,24 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
    - Q2, Q3는 **절대 스킵하지 않는다**. 반드시 AskUserQuestion을 호출하여 사용자 선택을 받는다
    - "테스트", "진행해줘" 같은 모호한 입력은 Q1도 스킵하지 않는다
 
-2. **반드시 AskUserQuestion 도구를 호출한다** (아래를 도구 파라미터로 변환하여 호출. 텍스트 출력 금지):
-   ```
-   AskUserQuestion({
-     questions: [
+2. **다음 JSON으로 AskUserQuestion 도구를 호출한다** (질문을 텍스트로 출력하면 안 된다. presets.md의 프리셋별 질문을 이 형식으로 변환하여 호출):
+
+   ```json
+   {
+     "questions": [
        {
-         question: "결과물은 어떤 형태면 좋겠어요?",
-         header: "결과물",
-         options: [
-           { label: "종합 리포트 (추천)", description: "깊이 있는 분석 문서. 여러 소스 교차 검증. 시간 좀 걸림." },
-           { label: "비교표", description: "여러 옵션을 나란히 비교. 의사결정할 때 좋음." },
-           { label: "핵심 요약", description: "1-2페이지. 빠르게 핵심만." },
-           { label: "잘 모르겠어요", description: "종합 리포트로 갈게요." }
+         "question": "결과물은 어떤 형태면 좋겠어요?",
+         "header": "결과물",
+         "options": [
+           {"label": "종합 리포트 (추천)", "description": "깊이 있는 분석 문서. 여러 소스 교차 검증. 시간 좀 걸림."},
+           {"label": "비교표", "description": "여러 옵션을 나란히 비교. 의사결정할 때 좋음."},
+           {"label": "핵심 요약", "description": "1-2페이지. 빠르게 핵심만."},
+           {"label": "잘 모르겠어요", "description": "종합 리포트로 갈게요."}
          ],
-         multiSelect: false
-       },
-       // ... 추가 질문
+         "multiSelect": false
+       }
      ]
-   })
+   }
    ```
 
 3. **절대 금지**:
@@ -353,29 +353,33 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 markdown 필드에는 팀 구성을 문자열로 동적 생성하여 전달한다. 아래는 호출 형식:
 
-```
-AskUserQuestion({
-  questions: [{
-    question: "이 팀 구성으로 시작할까요?",
-    header: "팀 확인",
-    options: [
-      {
-        label: "네, 시작해주세요 (추천)",
-        description: "위 구성대로 팀을 만들고 바로 작업을 시작합니다.",
-        markdown: "### 끼리끼리 팀 구성\n\n```\n├── 팀장 — [역할] ([비유 모델명])\n├── [팀원1] — [역할] ([비유 모델명])\n├── [팀원2] — [역할] ([비유 모델명])\n└── [팀원3] — [역할] ([비유 모델명])\n```\n\n| 역할 | 담당 | 도구 |\n|------|------|------|\n| 팀장 | 계획, 배분, 통합 | — |\n| [팀원1] | [업무] | [도구] |\n\n⏱️ 예상 소요: [시간]"
-      },
-      {
-        label: "팀원을 조정하고 싶어요",
-        description: "역할이나 인원수를 바꿀 수 있어요."
-      },
-      {
-        label: "처음부터 다시",
-        description: "인터뷰를 다시 진행합니다."
-      }
-    ],
-    multiSelect: false
-  }]
-})
+**다음 JSON 템플릿의 `[대괄호]` 부분을 실제 값으로 채운 후 AskUserQuestion 도구를 호출한다** (질문을 텍스트로 출력하면 안 된다):
+
+```json
+{
+  "questions": [
+    {
+      "question": "이 팀 구성으로 시작할까요?",
+      "header": "팀 확인",
+      "options": [
+        {
+          "label": "네, 시작해주세요 (추천)",
+          "description": "위 구성대로 팀을 만들고 바로 작업을 시작합니다.",
+          "markdown": "{팀 구성 트리 + 역할 테이블 + 예상 소요시간을 동적 생성}"
+        },
+        {
+          "label": "팀원을 조정하고 싶어요",
+          "description": "역할이나 인원수를 바꿀 수 있어요."
+        },
+        {
+          "label": "처음부터 다시",
+          "description": "인터뷰를 다시 진행합니다."
+        }
+      ],
+      "multiSelect": false
+    }
+  ]
+}
 ```
 
 **markdown 필드 생성 규칙:**
@@ -775,21 +779,23 @@ ELIF 라운드 >= 3:
 
 판정 결과를 사용자에게 제안 (최종 결정은 유저):
 
-**반드시 AskUserQuestion 도구를 호출한다** (아래를 도구 파라미터로 변환하여 호출. 텍스트 출력 금지):
+**다음 JSON 템플릿의 `[대괄호]` 부분을 실제 값으로 채운 후 AskUserQuestion 도구를 호출한다** (질문을 텍스트로 출력하면 안 된다):
 
-```
-AskUserQuestion({
-  questions: [{
-    question: "1라운드 결과를 확인했는데, [부족한 부분 설명]. 보강할까요?",
-    header: "품질 검증",
-    options: [
-      { label: "네, 보강해주세요 (추천)", description: "부족한 부분을 집중적으로 보완합니다. 시간이 좀 더 걸려요." },
-      { label: "이 정도면 괜찮아요", description: "현재 결과를 최종 리포트로 정리합니다." },
-      { label: "처음부터 다시", description: "팀을 해산하고 새로 구성합니다." }
-    ],
-    multiSelect: false
-  }]
-})
+```json
+{
+  "questions": [
+    {
+      "question": "1라운드 결과를 확인했는데, [부족한 부분 설명]. 보강할까요?",
+      "header": "품질 검증",
+      "options": [
+        {"label": "네, 보강해주세요 (추천)", "description": "부족한 부분을 집중적으로 보완합니다. 시간이 좀 더 걸려요."},
+        {"label": "이 정도면 괜찮아요", "description": "현재 결과를 최종 리포트로 정리합니다."},
+        {"label": "처음부터 다시", "description": "팀을 해산하고 새로 구성합니다."}
+      ],
+      "multiSelect": false
+    }
+  ]
+}
 ```
 
 ### 7-6. 2라운드 실행 방식 (3가지)
@@ -934,20 +940,22 @@ TeamDelete()
 
 잘 동작한 팀 구성을 저장하여 나중에 재사용할 수 있습니다.
 
-**반드시 AskUserQuestion 도구를 호출한다** (아래를 도구 파라미터로 변환하여 호출. 텍스트 출력 금지):
+**다음 JSON으로 AskUserQuestion 도구를 호출한다** (질문을 텍스트로 출력하면 안 된다):
 
-```
-AskUserQuestion({
-  questions: [{
-    question: "이 팀 구성을 저장해둘까요? 나중에 비슷한 작업할 때 바로 불러올 수 있어요.",
-    header: "팀 저장",
-    options: [
-      { label: "네, 저장해주세요", description: "다음에 비슷한 작업할 때 인터뷰 없이 바로 시작할 수 있어요." },
-      { label: "아니요, 괜찮아요", description: "이번만 사용하고 저장하지 않아요." }
-    ],
-    multiSelect: false
-  }]
-})
+```json
+{
+  "questions": [
+    {
+      "question": "이 팀 구성을 저장해둘까요? 나중에 비슷한 작업할 때 바로 불러올 수 있어요.",
+      "header": "팀 저장",
+      "options": [
+        {"label": "네, 저장해주세요", "description": "다음에 비슷한 작업할 때 인터뷰 없이 바로 시작할 수 있어요."},
+        {"label": "아니요, 괜찮아요", "description": "이번만 사용하고 저장하지 않아요."}
+      ],
+      "multiSelect": false
+    }
+  ]
+}
 ```
 
 저장 시 `.kkirikkiri/saved-teams/` 디렉토리에 기록:
