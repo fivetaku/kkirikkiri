@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.1] - 2026-03-01
+
+### Fixed
+- Step 3: 인터뷰 스킵 조건 강화 — Q2/Q3는 반드시 AskUserQuestion 호출 (모호한 입력 시 Q1도 스킵 금지)
+- Step 5: AskUserQuestion markdown 필드를 pseudo-code에서 유효한 문자열 생성 지시로 수정
+- Step 6: 공유 메모리 초기화 시 기존 `.kkirikkiri/` 파일 존재 여부 확인 로직 추가 (Write 에러 방지)
+- SKILL.md 본문 명령형 위반 14건 수정 (`~합니다` → `~한다`)
+
+### Changed
+- marketplace.json description을 plugin.json과 통일
+
 ## [0.7.0] - 2026-02-28
 
 ### Added
