@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.2] - 2026-03-02
+
+### Fixed
+- AskUserQuestion JS-like pseudo-code 4개를 JSON 형식으로 전환 — 도구 호출 보장
+  - Step 3 인터뷰, Step 5 팀 확인, Step 7 품질 검증, Step 8 팀 저장
+
 ## [0.7.1] - 2026-03-01
 
 ### Fixed
