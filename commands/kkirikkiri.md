@@ -36,7 +36,7 @@ Inspect `$ARGUMENTS` to determine the action:
 
 ## No Argument Provided
 
-When no argument is provided, present the following interactive menu using `AskUserQuestion`:
+**EXECUTE:** 아래 JSON으로 AskUserQuestion 도구를 즉시 호출한다:
 
 ```json
 {
