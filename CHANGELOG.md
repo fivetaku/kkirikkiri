@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.3] - 2026-03-02
+
+### Fixed
+- AskUserQuestion 도구 호출 보장을 위한 SKILL.md 전면 개선 (7가지 근본 원인 해결)
+  - 실행 앵커 추가: "WHEN TRIGGERED - EXECUTE IMMEDIATELY" 섹션 신규 삽입
+  - 모든 AskUserQuestion 블록에 "EXECUTE:" 명령형 키워드 적용 (Step 3/5/7/8)
+  - Step 5 markdown placeholder `{팀 구성 트리}` → `(동적: ...)` 패턴으로 교체
+  - Step 7 question placeholder `[부족한 부분 설명]` → `(동적: ...)` 패턴으로 교체
+  - 부정형 지시 "텍스트로 출력하면 안 된다" → 긍정형 "즉시 호출한다"로 변경
+
 ## [0.7.2] - 2026-03-02
 
 ### Fixed
