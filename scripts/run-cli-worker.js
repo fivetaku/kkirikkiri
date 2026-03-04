@@ -10,6 +10,16 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 
+function killProcess(pid) {
+  try {
+    if (process.platform === 'win32') {
+      process.kill(pid, 'SIGKILL');
+    } else {
+      process.kill(pid, 'SIGTERM');
+    }
+  } catch { /* process already gone */ }
+}
+
 function atomicWriteJson(filePath, payload) {
   const tmpPath = `${filePath}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
   fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2), 'utf8');
@@ -122,7 +132,7 @@ function main() {
   if (Number.isFinite(timeout) && timeout > 0) {
     timeoutHandle = setTimeout(() => {
       timeoutTriggered = true;
-      try { process.kill(child.pid, 'SIGTERM'); } catch {}
+      killProcess(child.pid);
     }, timeout * 1000);
     timeoutHandle.unref();
   }
@@ -147,7 +157,7 @@ function main() {
 
   child.on('exit', (code, signal) => {
     if (timeoutHandle) clearTimeout(timeoutHandle);
-    const timedOut = timeoutTriggered && signal === 'SIGTERM';
+    const timedOut = timeoutTriggered && (signal === 'SIGTERM' || signal === 'SIGKILL');
     finalize({
       provider,
       state: timedOut ? 'timed_out' : code === 0 ? 'done' : 'error',

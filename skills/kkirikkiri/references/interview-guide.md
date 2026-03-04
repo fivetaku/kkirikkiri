@@ -52,8 +52,8 @@ AskUserQuestion 호출 시 규칙:
 
 ```
 1. 외부 AI CLI 확인
-   - Bash: which codex → 코드 리뷰/분석 역할에 활용
-   - Bash: which gemini → 디자인/대규모 분석에 활용
+   - Bash: command -v codex → 코드 리뷰/분석 역할에 활용
+   - Bash: command -v gemini → 디자인/대규모 분석에 활용
 
 2. MCP 서버 확인
    - Perplexity → 리서치 팀원에게 웹 검색 도구 배정
@@ -64,8 +64,8 @@ AskUserQuestion 호출 시 규칙:
    - 프로젝트 내 관련 파일 탐색
 
 4. CLI 도구
-   - which gh → PR/이슈 관리
-   - which npm, which bun → 빌드/테스트
+   - command -v gh → PR/이슈 관리
+   - command -v npm, command -v bun → 빌드/테스트
 ```
 
 ### Phase 4: 팀 구성 제안 (유저 확인)

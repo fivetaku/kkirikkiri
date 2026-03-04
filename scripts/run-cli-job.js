@@ -20,6 +20,16 @@ const SCRIPT_DIR = __dirname;
 const WORKER_PATH = path.join(SCRIPT_DIR, 'run-cli-worker.js');
 const JOBS_DIR_DEFAULT = path.join(SCRIPT_DIR, '..', '.jobs');
 
+function killProcess(pid) {
+  try {
+    if (process.platform === 'win32') {
+      process.kill(pid, 'SIGKILL');
+    } else {
+      process.kill(pid, 'SIGTERM');
+    }
+  } catch { /* process already gone */ }
+}
+
 function exitWithError(message) {
   process.stderr.write(`${message}\n`);
   process.exit(1);
@@ -263,12 +273,8 @@ function cmdStop(_options, jobDir) {
     return;
   }
 
-  try {
-    process.kill(Number(status.pid), 'SIGTERM');
-    process.stdout.write('stop: sent SIGTERM\n');
-  } catch {
-    process.stdout.write('stop: process already gone\n');
-  }
+  killProcess(Number(status.pid));
+  process.stdout.write('stop: signal sent\n');
 }
 
 // ─── clean ──────────────────────────────────────────────────────────
@@ -286,8 +292,10 @@ function cmdCheck(provider) {
   }
 
   try {
-    const result = execFileSync('which', [provider], { encoding: 'utf8', timeout: 5000 }).trim();
-    process.stdout.write(`${provider}: found at ${result}\n`);
+    const whichCmd = process.platform === 'win32' ? 'where' : 'which';
+    const result = execFileSync(whichCmd, [provider], { encoding: 'utf8', timeout: 5000 }).trim();
+    const firstLine = result.split(/\r?\n/)[0]; // where returns multiple lines on Windows
+    process.stdout.write(`${provider}: found at ${firstLine}\n`);
     process.exit(0);
   } catch {
     process.stdout.write(`${provider}: not found\n`);
