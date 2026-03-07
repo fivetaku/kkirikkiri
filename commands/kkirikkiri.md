@@ -81,4 +81,5 @@ Read the skill and reference files, then follow the workflow:
 2. Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/presets.md`
 3. Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/interview-guide.md`
 4. Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/metaphor-guide.md`
-5. Follow SKILL.md's 8-step workflow with user's request: `$ARGUMENTS`
+5. If PM/product preset matched → also Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/pm-frameworks.md`
+6. Follow SKILL.md's 8-step workflow with user's request: `$ARGUMENTS`

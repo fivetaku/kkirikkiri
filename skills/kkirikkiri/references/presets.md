@@ -185,6 +185,101 @@ Q3. "톤앤매너는?" (header: "톤", multiSelect: false)
 
 ---
 
+## PM/Product 팀 (Product)
+
+### 기본 정보
+- id: product
+- keywords: PRD, 전략, 기획, OKR, 로드맵, 가설, 검증, 디스커버리, 페르소나, GTM, 런칭, 경쟁분석, 시장분석, 비즈니스모델, 가격, 포지셔닝, North Star, 사용자스토리, 스프린트
+- description: PM 프레임워크 기반 제품 기획 — 디스커버리, 전략, PRD, GTM까지
+
+### 기본 구성 (3명)
+| 역할 | 모델 | R&R | 절대 하면 안 되는 것 |
+|------|------|-----|-------------------|
+| Lead | Opus | PM 프레임워크 기반 워크플로우 관리, 체크포인트에서 사용자 확인, 결과 통합/검증 | 직접 리서치, 직접 문서 작성 |
+| Researcher | Opus | 시장/경쟁/사용자 데이터 수집, 트렌드 분석, 정량 데이터 조사 | 결론 도출, 프레임워크 적용, 최종 문서 작성 |
+| Strategist | Opus | 프레임워크 적용 (OST, Strategy Canvas, Lean Canvas, Assumption Mapping 등), 데이터 기반 분석 및 인사이트 도출 | 직접 리서치, 최종 문서 작성 |
+
+### 확장 구성 (깊이 있게 요청 시 또는 복합 작업)
+- Lead (Opus) + Researcher (Opus) + Strategist (Opus) + Writer (Sonnet)
+- Writer는 팀장/Strategist의 지시에 따라 최종 문서(PRD, 전략 문서 등)만 작성
+
+### 복합 작업 확장 (디스커버리+전략+PRD 등 3개 이상 작업 시)
+- Lead (Opus) + Researcher 1-2 (Opus) + Strategist (Opus) + Writer (Sonnet)
+- Researcher 분업: 시장/경쟁 vs 사용자/데이터
+
+### 외부 모델 활용
+- Codex CLI 있으면: 경쟁사 기술 분석, 코드 기반 feasibility 검증 역할 추가
+- Gemini CLI 있으면: 대규모 시장 데이터/보고서 요약 역할 추가
+- Perplexity MCP 있으면: Researcher에게 실시간 시장 데이터 검색 도구로 배정
+- 없으면: Claude(Opus)로 해당 역할 대체
+
+### 인터뷰 질문 (최대 3개)
+
+Q1. "어떤 제품/서비스에 대한 작업인가요?" (header: "제품")
+    → 열린 질문 (유저 자유 입력)
+
+Q2. "어떤 PM 작업이 필요해요?" (header: "작업 유형", multiSelect: true)
+    options:
+    - "디스커버리 (추천)" — 아이디어 발굴, 가설 검증, 실험 설계. 뭘 만들지 정하기 전 단계.
+    - "제품 전략" — 비전, 타겟, 포지셔닝, 성장 전략. 큰 그림 그리기.
+    - "PRD 작성" — 기능 요구사항 문서. 개발팀에게 전달할 스펙.
+    - "시장/경쟁 분석" — 시장 규모, 경쟁사 분석, 사용자 세그먼트.
+    - "OKR/메트릭 설계" — 목표 지표, North Star, 성공 기준 정의.
+    - "GTM/런칭 전략" — 출시 계획, 타겟 세그먼트, 채널 전략.
+    - "잘 모르겠어요" — 제품 설명 듣고 추천해드릴게요.
+
+Q3. "어느 정도 깊이로?" (header: "깊이", multiSelect: false)
+    options:
+    - "제대로 (추천)" — 프레임워크 기반 체계적 분석. 여러 관점 교차 검증. 시간 좀 걸림.
+    - "핵심만 빠르게" — 기본 3명으로 빠르게. 핵심 포인트만.
+    - "잘 모르겠어요" — 추천대로 갈게요.
+
+### 동적 조정 규칙
+- Q2에서 단일 작업 선택 → 기본 구성 (3명)
+- Q2에서 2개 이상 작업 선택 → 확장 구성 (Writer 추가) 또는 복합 작업 확장
+- Q2에서 "디스커버리" 포함 → 팀장에게 Discovery Workflow 체이닝 패턴 주입
+- Q2에서 "제품 전략" 포함 → Strategist에게 Strategy Canvas 9-section 주입
+- Q2에서 "PRD 작성" 포함 → Writer에게 PRD 8-section 템플릿 주입
+- Q2에서 "시장/경쟁 분석" 포함 → Researcher에게 경쟁 분석 + 시장 규모(TAM/SAM/SOM) 프레임워크 주입
+- Q2에서 "OKR/메트릭" 포함 → Strategist에게 North Star + Input Metrics 프레임워크 주입
+- Q2에서 "GTM/런칭" 포함 → Strategist에게 GTM 전략 + 비치헤드 세그먼트 프레임워크 주입
+- Q3에서 "제대로" → 확장 구성, 체크포인트 포함 워크플로우
+- Q3에서 "핵심만" → 기본 구성, 체크포인트 축소
+- 환경스캔에서 Perplexity MCP 발견 → Researcher에 실시간 검색 도구 배정
+
+### 체이닝 워크플로우 (PM 프리셋 전용)
+
+PM 프리셋에서 팀장은 작업을 순차적 단계로 구성하고, 단계 사이에 체크포인트를 둔다.
+
+**단일 작업 시**: 해당 프레임워크의 단계를 순차 진행
+**복합 작업 시**: 리서치 → 분석/전략 → 문서화 순으로 체이닝
+
+```
+예시: 디스커버리 + PRD
+
+Step 1: Researcher가 시장/사용자 데이터 수집
+Step 2: Strategist가 데이터 기반 OST + Assumption Mapping
+  [CHECKPOINT: 팀장이 사용자에게 "여기까지 결과 확인해주세요" 보고]
+Step 3: Strategist가 우선순위 정리 + 실험 설계
+Step 4: Writer가 Discovery Plan + PRD 초안 작성
+  [CHECKPOINT: 팀장이 초안 검증 후 사용자에게 보고]
+Step 5: 피드백 반영 → 최종 문서
+```
+
+팀장 프롬프트에 반드시 포함:
+- pm-frameworks.md의 해당 프레임워크 내용
+- "단계별 진행하되, 다음 단계로 넘어가기 전 이전 단계 결과를 TEAM_FINDINGS.md에 기록"
+- "체크포인트에서 SendMessage로 메인 세션에 중간 결과 보고"
+
+### 프레임워크 레퍼런스
+
+PM 프리셋 매칭 시, 팀원 프롬프트 작성 전에 반드시 읽어야 할 파일:
+- `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/pm-frameworks.md`
+
+이 파일의 "팀원 프롬프트 주입 가이드"에 따라 각 역할에 해당 프레임워크를 주입한다.
+
+---
+
 ## 범용 팀 (Generic)
 
 > 4개 프리셋에 매칭되지 않는 요청 시 범용 인터뷰로 전환.
