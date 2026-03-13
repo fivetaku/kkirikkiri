@@ -52,11 +52,9 @@ Q3. "리서치 깊이는?" (header: "깊이", multiSelect: false)
 
 ### 추천 에이전트 (recommended_agents)
 .claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- design-ux-researcher — UX 리서치, 사용자 인터뷰, 행동 분석 전문 (agency-agents/design/)
-- product-trend-researcher — 시장 인텔리전스, 경쟁 분석, 트렌드 예측 (agency-agents/product/)
-- product-feedback-synthesizer — 멀티채널 피드백 수집·분석, NPS, 인사이트 도출 (agency-agents/product/)
-- project-management-experiment-tracker — A/B 테스트 설계, 통계 분석, 가설 검증 (agency-agents/project-management/)
-- marketing-seo-specialist — 검색 트렌드 및 키워드 리서치, 경쟁사 콘텐츠 분석 (agency-agents/marketing/)
+- deep-research
+- data-analyst
+- web-researcher
 
 ---
 
@@ -108,11 +106,9 @@ Q3. "테스트도 필요해요?" (header: "테스트", multiSelect: false)
 
 ### 추천 에이전트 (recommended_agents)
 .claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- engineering-senior-developer — 풀스택 프리미엄 구현, 코드 품질 전문 (agency-agents/engineering/)
-- engineering-backend-architect — 확장 가능한 API, DB 설계, 마이크로서비스 (agency-agents/engineering/)
-- engineering-frontend-developer — React/Vue/Angular, 성능·접근성 최적화 (agency-agents/engineering/)
-- engineering-ai-engineer — ML 모델, RAG, LLM 통합, MLOps (agency-agents/engineering/)
-- engineering-rapid-prototyper — MVP/POC 빠른 구현, Next.js·Supabase·shadcn/ui (agency-agents/engineering/)
+- code-reviewer
+- architect
+- test-engineer
 
 ---
 
@@ -158,11 +154,9 @@ Q3. "분석 결과를 어떤 형태로 받을까요?" (header: "결과물", mult
 
 ### 추천 에이전트 (recommended_agents)
 .claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- testing-test-results-analyzer — 통계 기반 테스트 결과 분석, 결함 예측, 릴리스 준비도 평가 (agency-agents/testing/)
-- testing-reality-checker — 증거 기반 품질 인증, 과장 평가 차단, 프로덕션 준비 여부 판정 (agency-agents/testing/)
-- support-analytics-reporter — SQL/Python 대시보드, RFM 분석, KPI 추적 (agency-agents/support/)
-- data-analytics-reporter — BI 플랫폼, 고객 분석, 전략적 리포팅 (agency-agents/specialized/)
-- testing-workflow-optimizer — Lean/Six Sigma 프로세스 개선, 자동화 ROI 산정 (agency-agents/testing/)
+- code-analyzer
+- security-reviewer
+- data-analyst
 
 ---
 
@@ -209,11 +203,9 @@ Q3. "톤앤매너는?" (header: "톤", multiSelect: false)
 
 ### 추천 에이전트 (recommended_agents)
 .claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- marketing-content-creator — 멀티플랫폼 에디토리얼 전략, 브랜드 스토리텔링, SEO 콘텐츠 (agency-agents/marketing/)
-- design-visual-storyteller — 비주얼 내러티브, 멀티미디어 콘텐츠, 데이터 시각화 (agency-agents/design/)
-- design-brand-guardian — 브랜드 아이덴티티·보이스·일관성 수호 (agency-agents/design/)
-- design-image-prompt-engineer — AI 이미지 생성 프롬프트, 비주얼 에셋 제작 (agency-agents/design/)
-- engineering-technical-writer — 기술 문서 작성 전문 (agency-agents/engineering/)
+- writer
+- translator
+- editor
 
 ---
 
@@ -281,11 +273,9 @@ Q3. "어느 정도 깊이로?" (header: "깊이", multiSelect: false)
 
 ### 추천 에이전트 (recommended_agents)
 .claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- product-sprint-prioritizer — RICE/MoSCoW/Kano 프레임워크, 백로그 관리, 애자일 플래닝 (agency-agents/product/)
-- project-manager-senior — 스펙→태스크 변환, 현실적 스코프 설정, 일정 관리 (agency-agents/project-management/)
-- project-management-project-shepherd — 크로스펑셔널 조율, 스테이크홀더 얼라인먼트 (agency-agents/project-management/)
-- product-behavioral-nudge-engine — 행동 심리학, 습관 형성, UX 넛지 설계 (agency-agents/product/)
-- design-ux-architect — 정보 구조, 개발자 친화적 UX 설계 (agency-agents/design/)
+- prd-writer
+- user-researcher
+- data-analyst
 
 ### 체이닝 워크플로우 (PM 프리셋 전용)
 
@@ -325,13 +315,7 @@ PM 프리셋 매칭 시, 팀원 프롬프트 작성 전에 반드시 읽어야 �
 > 4개 프리셋에 매칭되지 않는 요청 시 범용 인터뷰로 전환.
 
 ### 추천 에이전트 (recommended_agents)
-.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- agents-orchestrator — 멀티에이전트 파이프라인 조율, 자율 워크플로우 관리 (agency-agents/specialized/)
-- project-management-studio-producer — 포트폴리오 오케스트레이션, 전략적 비전 수립 (agency-agents/project-management/)
-- engineering-devops-automator — CI/CD, IaC, 컨테이너 오케스트레이션, 팀 공통 인프라 (agency-agents/engineering/)
-- marketing-growth-hacker — 바이럴 루프, 퍼널 최적화, PLG 실험 (agency-agents/marketing/)
-- testing-tool-evaluator — 기술 도구 평가·추천, TCO/ROI 분석, 벤더 선정 (agency-agents/testing/)
-프리셋 매핑이 불확실할 때는 위 범용 에이전트와 함께 환경스캔으로 관련 에이전트를 추가 판단한다.
+프리셋 매핑 없음. 범용 스캔만 사용하여 관련 에이전트를 판단한다.
 
 ### 인터뷰 질문
 
