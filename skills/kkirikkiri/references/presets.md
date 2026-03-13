@@ -50,6 +50,12 @@ Q3. "리서치 깊이는?" (header: "깊이", multiSelect: false)
 - 환경스캔에서 Perplexity MCP 발견 → Researcher에 도구로 배정
 - 환경스캔에서 Codex CLI 발견 → 기술 분석 역할 추가 제안
 
+### 추천 에이전트 (recommended_agents)
+.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
+- deep-research
+- data-analyst
+- web-researcher
+
 ---
 
 ## 개발 팀 (Development)
@@ -98,6 +104,12 @@ Q3. "테스트도 필요해요?" (header: "테스트", multiSelect: false)
 - Q2에서 "기존 코드에 추가" → 환경스캔으로 기존 패턴/스택 파악 후 팀에 전달
 - 환경스캔에서 gh CLI 발견 → PR 생성 기능 활용 제안
 
+### 추천 에이전트 (recommended_agents)
+.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
+- code-reviewer
+- architect
+- test-engineer
+
 ---
 
 ## 분석 팀 (Analysis)
@@ -139,6 +151,12 @@ Q3. "분석 결과를 어떤 형태로 받을까요?" (header: "결과물", mult
 ### 동적 조정 규칙
 - Q2에서 "보안" 선택 + Codex CLI 있음 → Codex에 보안 전문 분석 위임
 - Q2에서 여러 관점 선택 → Explorer 역할을 관점별로 분배
+
+### 추천 에이전트 (recommended_agents)
+.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
+- code-analyzer
+- security-reviewer
+- data-analyst
 
 ---
 
@@ -182,6 +200,12 @@ Q3. "톤앤매너는?" (header: "톤", multiSelect: false)
 ### 동적 조정 규칙
 - Q2에서 "비개발자" → Writer에 "기술 용어 대신 비유 사용" 지시 추가
 - 환경스캔에서 기존 README 발견 → 기존 톤/구조 참조하도록 전달
+
+### 추천 에이전트 (recommended_agents)
+.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
+- writer
+- translator
+- editor
 
 ---
 
@@ -247,6 +271,12 @@ Q3. "어느 정도 깊이로?" (header: "깊이", multiSelect: false)
 - Q3에서 "핵심만" → 기본 구성, 체크포인트 축소
 - 환경스캔에서 Perplexity MCP 발견 → Researcher에 실시간 검색 도구 배정
 
+### 추천 에이전트 (recommended_agents)
+.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
+- prd-writer
+- user-researcher
+- data-analyst
+
 ### 체이닝 워크플로우 (PM 프리셋 전용)
 
 PM 프리셋에서 팀장은 작업을 순차적 단계로 구성하고, 단계 사이에 체크포인트를 둔다.
@@ -283,6 +313,9 @@ PM 프리셋 매칭 시, 팀원 프롬프트 작성 전에 반드시 읽어야 �
 ## 범용 팀 (Generic)
 
 > 4개 프리셋에 매칭되지 않는 요청 시 범용 인터뷰로 전환.
+
+### 추천 에이전트 (recommended_agents)
+프리셋 매핑 없음. 범용 스캔만 사용하여 관련 에이전트를 판단한다.
 
 ### 인터뷰 질문
 
