@@ -50,11 +50,14 @@ Q3. "리서치 깊이는?" (header: "깊이", multiSelect: false)
 - 환경스캔에서 Perplexity MCP 발견 → Researcher에 도구로 배정
 - 환경스캔에서 Codex CLI 발견 → 기술 분석 역할 추가 제안
 
-### 추천 에이전트 (recommended_agents)
-.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- deep-research
-- data-analyst
-- web-researcher
+### 에이전트 매칭 키워드 (agent_match_keywords)
+.claude/agents/ 스캔 시, 에이전트의 description에 아래 키워드가 포함되면 팀에 우선 추천:
+- 리서치, research, 조사, 검색, 수집
+- 데이터, data, 분석, analysis, 통계
+- 웹, web, 크롤링, scraping
+
+매칭 방법: 에이전트 파일의 frontmatter description을 읽고 키워드 포함 여부로 판단.
+recommended-for 필드가 "research"이면 무조건 매칭.
 
 ---
 
@@ -104,11 +107,14 @@ Q3. "테스트도 필요해요?" (header: "테스트", multiSelect: false)
 - Q2에서 "기존 코드에 추가" → 환경스캔으로 기존 패턴/스택 파악 후 팀에 전달
 - 환경스캔에서 gh CLI 발견 → PR 생성 기능 활용 제안
 
-### 추천 에이전트 (recommended_agents)
-.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- code-reviewer
-- architect
-- test-engineer
+### 에이전트 매칭 키워드 (agent_match_keywords)
+.claude/agents/ 스캔 시, 에이전트의 description에 아래 키워드가 포함되면 팀에 우선 추천:
+- 코드, code, 개발, develop, 구현, implement
+- 리뷰, review, 아키텍처, architect, 설계
+- 테스트, test, QA, 품질
+
+매칭 방법: 에이전트 파일의 frontmatter description을 읽고 키워드 포함 여부로 판단.
+recommended-for 필드가 "development"이면 무조건 매칭.
 
 ---
 
@@ -152,11 +158,14 @@ Q3. "분석 결과를 어떤 형태로 받을까요?" (header: "결과물", mult
 - Q2에서 "보안" 선택 + Codex CLI 있음 → Codex에 보안 전문 분석 위임
 - Q2에서 여러 관점 선택 → Explorer 역할을 관점별로 분배
 
-### 추천 에이전트 (recommended_agents)
-.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- code-analyzer
-- security-reviewer
-- data-analyst
+### 에이전트 매칭 키워드 (agent_match_keywords)
+.claude/agents/ 스캔 시, 에이전트의 description에 아래 키워드가 포함되면 팀에 우선 추천:
+- 분석, analyze, 탐색, explore, 구조
+- 보안, security, 취약점, vulnerability
+- 코드, code, 패턴, pattern, 품질
+
+매칭 방법: 에이전트 파일의 frontmatter description을 읽고 키워드 포함 여부로 판단.
+recommended-for 필드가 "analysis"이면 무조건 매칭.
 
 ---
 
@@ -201,11 +210,14 @@ Q3. "톤앤매너는?" (header: "톤", multiSelect: false)
 - Q2에서 "비개발자" → Writer에 "기술 용어 대신 비유 사용" 지시 추가
 - 환경스캔에서 기존 README 발견 → 기존 톤/구조 참조하도록 전달
 
-### 추천 에이전트 (recommended_agents)
-.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- writer
-- translator
-- editor
+### 에이전트 매칭 키워드 (agent_match_keywords)
+.claude/agents/ 스캔 시, 에이전트의 description에 아래 키워드가 포함되면 팀에 우선 추천:
+- 문서, document, 작성, write, 콘텐츠, content
+- 번역, translate, 편집, edit, 교정
+- README, 가이드, guide, 튜토리얼, tutorial
+
+매칭 방법: 에이전트 파일의 frontmatter description을 읽고 키워드 포함 여부로 판단.
+recommended-for 필드가 "content"이면 무조건 매칭.
 
 ---
 
@@ -271,11 +283,14 @@ Q3. "어느 정도 깊이로?" (header: "깊이", multiSelect: false)
 - Q3에서 "핵심만" → 기본 구성, 체크포인트 축소
 - 환경스캔에서 Perplexity MCP 발견 → Researcher에 실시간 검색 도구 배정
 
-### 추천 에이전트 (recommended_agents)
-.claude/agents/ 디렉토리에 아래 이름의 에이전트가 있으면 팀에 우선 추천:
-- prd-writer
-- user-researcher
-- data-analyst
+### 에이전트 매칭 키워드 (agent_match_keywords)
+.claude/agents/ 스캔 시, 에이전트의 description에 아래 키워드가 포함되면 팀에 우선 추천:
+- PRD, 기획, product, 전략, strategy, 로드맵
+- 사용자, user, 페르소나, persona, 리서치
+- 데이터, data, 분석, OKR, 지표, metric
+
+매칭 방법: 에이전트 파일의 frontmatter description을 읽고 키워드 포함 여부로 판단.
+recommended-for 필드가 "product"이면 무조건 매칭.
 
 ### 체이닝 워크플로우 (PM 프리셋 전용)
 
@@ -314,8 +329,9 @@ PM 프리셋 매칭 시, 팀원 프롬프트 작성 전에 반드시 읽어야 �
 
 > 4개 프리셋에 매칭되지 않는 요청 시 범용 인터뷰로 전환.
 
-### 추천 에이전트 (recommended_agents)
-프리셋 매핑 없음. 범용 스캔만 사용하여 관련 에이전트를 판단한다.
+### 에이전트 매칭 키워드 (agent_match_keywords)
+프리셋 매핑 없음. 에이전트 description과 사용자 요청의 키워드 유사도로 동적 판단한다.
+recommended-for 필드가 있으면 해당 프리셋으로 매칭 시도.
 
 ### 인터뷰 질문
 
