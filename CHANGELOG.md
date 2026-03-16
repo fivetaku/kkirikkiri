@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.12.0] - 2026-03-17
+
+### Added
+- Step 6-2 아카이빙 기능 — 이전 세션의 TEAM_FINDINGS.md를 선택적으로 보존
+  - AskUserQuestion으로 3가지 선택지: "보관하고 새로 시작" / "그냥 새로 시작" / "이전 기록 이어서"
+  - archive/ 디렉토리에 날짜별 보관 (Bash cp ~100 토큰)
+  - 10KB 초과 시 요약 아카이빙 전환 고려
+- "항상 해" 체크리스트에 아카이빙 확인 항목 추가
+
+## [0.11.0] - 2026-03-15
+
+### Changed
+- Step 2 에이전트 동적 매칭 — recommended_agents 하드코딩 → description 키워드 기반 동적 매칭
+  - 우선순위: recommended-for 필드 > agent_match_keywords > 의미적 관련성
+- Step 6 팀원 프롬프트 템플릿 7→12 섹션 확장 (정체성/핵심원칙/성공기준/결과물형식/소통방식)
+- presets.md: 6개 프리셋 recommended_agents → agent_match_keywords 전환
+
+### Fixed
+- Step 5 AskUserQuestion markdown collapse ("N lines hidden") 문제 해결 — 텍스트 출력 → 간단 확인 분리
+
+## [0.10.0] - 2026-03-13
+
+### Added
+- 에이전트 저장 기능 (Step 8-3-1) — 잘 동작한 팀원을 .claude/agents/에 재사용 가능한 에이전트로 저장
+- 스폰 안정성 — 3단계 재시도 로직 (동일 설정 → 모델 다운그레이드 → 팀 축소)
+- 팀장 프롬프트에 팀원 무응답/스폰 실패 대응 지시 추가
+
+## [0.9.0] - 2026-03-08
+
+### Added
+- PM/Product 프리셋 — PM 프레임워크 기반 제품 기획 (디스커버리, 전략, PRD, GTM)
+  - pm-frameworks.md 레퍼런스 추가
+  - 체이닝 워크플로우 (리서치 → 분석/전략 → 문서화)
+- 크로스 플랫폼 호환성 (Windows/Unix path 처리)
+
+## [0.8.0] - 2026-03-05
+
+### Fixed
+- allowed-tools에서 AskUserQuestion 제거 — auto-approve로 UI가 렌더링되지 않던 버그 해결
+- SKILL.md + command에 EXECUTE 키워드 적용 — 도구 호출 보장 강화
+
 ## [0.7.3] - 2026-03-02
 
 ### Fixed

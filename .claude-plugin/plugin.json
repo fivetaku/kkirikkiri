@@ -1,6 +1,6 @@
 {
   "name": "kkirikkiri",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Natural language team builder for Claude Code Agent Teams — create purpose-driven AI teams with a single sentence, with agent auto-detection and reuse across projects",
   "author": {
     "name": "fivetaku",

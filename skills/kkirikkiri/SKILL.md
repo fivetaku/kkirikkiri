@@ -462,14 +462,61 @@ team_name 예시: `kkirikkiri-research-0227-1430`
 
 팀 생성 직후, 프로젝트 루트에 공유 메모리 파일 3종을 생성한다.
 
-**기존 파일 처리 (중요):**
-이전 세션의 `.kkirikkiri/` 파일이 남아있을 수 있다. Write 도구는 읽지 않은 파일에 쓰기를 거부하므로, 반드시 아래 순서를 따른다:
+**기존 파일 처리 + 아카이빙 (중요):**
+이전 세션의 `.kkirikkiri/` 파일이 남아있을 수 있다. 이전 세션의 발견 사항(FINDINGS)은 가치 있는 지식이므로 선택적으로 보존한다.
 
 ```
 1. Bash("ls {프로젝트루트}/.kkirikkiri/ 2>/dev/null") 로 기존 파일 존재 확인
-2. 파일이 존재하면 → Read(file_path, limit=5) 로 먼저 읽기
-3. 그 후 Write 로 새 내용으로 덮어쓰기
-4. 파일이 없으면 → 바로 Write 로 생성
+2. 기존 TEAM_FINDINGS.md가 존재하면:
+   a. Read(TEAM_FINDINGS.md, limit=10) 로 내용 확인
+   b. 템플릿 이상의 실제 내용이 있으면 → AskUserQuestion으로 사용자에게 확인:
+
+      EXECUTE: AskUserQuestion 호출
+      {
+        "questions": [
+          {
+            "question": "이전 작업 기록이 있어요. 어떻게 할까요?",
+            "header": "이전 기록",
+            "options": [
+              {"label": "보관하고 새로 시작 (추천)", "description": "이전 발견 사항을 보관해두고 새 작업을 시작해요. 필요하면 나중에 참고할 수 있어요."},
+              {"label": "그냥 새로 시작", "description": "이전 기록을 지우고 깨끗하게 시작해요."},
+              {"label": "이전 기록 이어서", "description": "이전 발견 사항을 유지한 채 새 팀이 이어받아요."}
+            ],
+            "multiSelect": false
+          }
+        ]
+      }
+
+   c. 사용자 선택에 따라:
+      - "보관하고 새로 시작":
+        Bash("mkdir -p {프로젝트루트}/.kkirikkiri/archive")
+        Bash("cp {프로젝트루트}/.kkirikkiri/TEAM_FINDINGS.md {프로젝트루트}/.kkirikkiri/archive/FINDINGS-{이전날짜}.md")
+        → TEAM 3종 파일 모두 새 내용으로 Write
+      - "그냥 새로 시작":
+        → Read(limit=5) 후 Write 덮어쓰기 (기존과 동일)
+      - "이전 기록 이어서":
+        → TEAM_PLAN.md, TEAM_PROGRESS.md만 덮어쓰기
+        → TEAM_FINDINGS.md는 유지 (Edit으로 새 섹션만 추가)
+
+   d. 내용이 템플릿뿐이면 → 아카이빙 없이 바로 덮어쓰기
+
+3. 기존 파일이 없으면 → 바로 Write로 생성
+```
+
+**아카이빙 규칙:**
+- 보존 대상: TEAM_FINDINGS.md만 (DEAD_ENDS 포함)
+- TEAM_PLAN.md, TEAM_PROGRESS.md는 보존 가치 없음 (매번 새로 작성)
+- results/, prompts/, saved-teams/는 이미 보존됨 (덮어쓰기 대상 아님)
+- 아카이빙 비용: Bash `cp` ~100 토큰 (무시할 수준)
+- archive/ 디렉토리의 파일은 팀원이 자동으로 읽지 않음 (팀장이 명시적으로 지시할 때만)
+- FINDINGS가 10KB 초과 시: 아카이빙 대신 요약본 생성을 고려 (토큰 절약)
+
+**"이전 기록 이어서" 선택 시 추가 처리:**
+새 TEAM_FINDINGS.md 상단에 구분선을 추가하여 이전/현재 세션을 구분한다:
+```
+Edit(TEAM_FINDINGS.md):
+  old_string: "# 발견 사항 & 공유 자료"
+  new_string: "# 발견 사항 & 공유 자료\n\n---\n\n## [현재 날짜] — 새 세션 시작\n\n(이하 이전 세션 기록 유지)"
 ```
 
 대상 파일:
@@ -1275,3 +1322,4 @@ Write → {프로젝트루트}/.kkirikkiri/saved-teams/{preset}-{날짜}.md
 - [ ] 작업 완료 후 팀 저장 여부 사용자에게 확인
 - [ ] 저장된 팀 재사용 요청 시 saved-teams 디렉토리에서 불러오기
 - [ ] 팀원 idle 3회 연속 시 팀장에게 교체 지시
+- [ ] 이전 세션의 TEAM_FINDINGS.md가 있으면 아카이빙 여부를 사용자에게 확인
