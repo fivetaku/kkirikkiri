@@ -194,7 +194,7 @@ ls .claude/agents/*.md 2>/dev/null
 
 ### 기존 에이전트 재활용
 
-`.claude/agents/` 에 기존 에이전트 파일이 있으면 팀에 활용할 수 있습니다.
+`.claude/agents/` 에 기존 에이전트 파일이 있으면 팀에 활용할 수 있다.
 
 #### 재활용 판단 기준
 
@@ -209,7 +209,7 @@ ls .claude/agents/*.md 2>/dev/null
 기존 에이전트를 팀에 포함할 때:
 
 ```
-Task({
+Agent({
   team_name: "[팀이름]",
   name: "[에이전트-파일명]",
   subagent_type: "[에이전트-파일명]",  // .claude/agents/ 내 파일명
@@ -332,7 +332,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ## Step 5: 팀 구성 제안 + 유저 확인
 
-최종 팀 구성을 사용자에게 보여주고 확인을 받습니다.
+최종 팀 구성을 사용자에게 보여주고 확인을 받는다.
 
 ### 제안 형식
 
@@ -579,7 +579,7 @@ Edit(TEAM_FINDINGS.md):
 
 > **DEAD_ENDS가 중요한 이유**: 팀을 재구성할 때 새 팀이 같은 막다른 골목을 다시 탐색하는 것을 방지한다.
 > 긍정적 발견만 기록하면 공유 메모리의 효과가 60-70%에 그치지만,
-> 실패한 접근까지 기록하면 75-80%까지 컨텍스트를 복구할 수 있습니다.
+> 실패한 접근까지 기록하면 75-80%까지 컨텍스트를 복구할 수 있다.
 
 ### 공유 메모리 규칙
 
@@ -613,10 +613,10 @@ TaskCreate({
 
 ### 6-4. Claude 팀원 스폰
 
-각 팀원을 Task 도구로 스폰한다:
+각 팀원을 Agent 도구로 스폰한다:
 
 ```
-Task({
+Agent({
   team_name: "kkirikkiri-{preset}-{timestamp}",
   name: "[팀원-이름]",
   subagent_type: "general-purpose",
@@ -706,11 +706,11 @@ Task({
 - 컨텍스트가 길어져서 기억이 흐릿하면 3개 파일을 다시 읽기
 
 ## 심부름꾼 (하위 에이전트) 활용
-작업량이 많거나 병렬 처리가 필요하면, Task 도구로 하위 에이전트(심부름꾼)를 스폰할 수 있습니다.
+작업량이 많거나 병렬 처리가 필요하면, Agent 도구로 하위 에이전트(심부름꾼)를 스폰할 수 있습니다.
 
 심부름꾼 스폰 방법:
 ```
-Task({
+Agent({
   subagent_type: "general-purpose",
   model: "sonnet",  // 심부름꾼은 Sonnet
   prompt: "[구체적 작업 지시]"
@@ -824,7 +824,7 @@ Task({
 
 #### 스폰 안정성 — 재시도 로직
 
-Task 도구로 팀원을 스폰할 때 실패하면 아래 순서로 대응한다:
+Agent 도구로 팀원을 스폰할 때 실패하면 아래 순서로 대응한다:
 
 **1차 실패 — 동일 설정으로 재시도:**
 - 일시적 오류일 수 있으므로 동일한 설정(모델, 프롬프트)으로 1회 재시도한다.
@@ -884,9 +884,8 @@ Codex CLI로 [역할]을 수행합니다. 다음 절차를 따르세요:
 
 ```
 SendMessage({
-  type: "message",
-  recipient: "[leader-name]",
-  content: "팀이 구성되었습니다. 공유 메모리 파일(.kkirikkiri/)이 초기화되었습니다. TEAM_PLAN.md를 읽고 팀원들에게 태스크를 배분해주세요.",
+  to: "[leader-name]",
+  message: "팀이 구성되었습니다. 공유 메모리 파일(.kkirikkiri/)이 초기화되었습니다. TEAM_PLAN.md를 읽고 팀원들에게 태스크를 배분해주세요.",
   summary: "팀 구성 완료, 태스크 배분 시작"
 })
 ```
@@ -983,7 +982,7 @@ ELIF 라운드 >= 3:
   SendMessage({
     type: "message",
     recipient: "[leader-name]",
-    content: "1라운드 결과에서 [부족한 부분]이 부족합니다. 2라운드 규칙: (1) 검증용 심부름꾼을 스폰하여 1라운드 결과를 독립 검토시키세요. (2) 팀원들의 담당 영역을 교차 배정하세요. (3) 기존 결론에 대한 반론부터 검토하세요.",
+    message: "1라운드 결과에서 [부족한 부분]이 부족합니다. 2라운드 규칙: (1) 검증용 심부름꾼을 스폰하여 1라운드 결과를 독립 검토시키세요. (2) 팀원들의 담당 영역을 교차 배정하세요. (3) 기존 결론에 대한 반론부터 검토하세요.",
     summary: "2라운드 보강 지시 (바이어스 방지 포함)"
   })
   ```
@@ -994,7 +993,7 @@ ELIF 라운드 >= 3:
 - 기존 팀 종료:
   ```
   # 기존 팀원 전원 해고
-  SendMessage({ type: "shutdown_request", recipient: "[각 팀원]" })
+  SendMessage({ to: "[각 팀원]", message: { type: "shutdown_request" } })
   TeamDelete()
   ```
 - 새 팀 생성: Step 6으로 돌아가되, 1라운드에서 배운 것을 반영
@@ -1008,10 +1007,10 @@ ELIF 라운드 >= 3:
 - 문제 팀원만 해고 + 새 팀원 스폰:
   ```
   # 문제 팀원 해고
-  SendMessage({ type: "shutdown_request", recipient: "[문제-팀원]" })
+  SendMessage({ to: "[문제-팀원]", message: { type: "shutdown_request" } })
 
   # 새 팀원 스폰 (공유 메모리 읽기 지시 포함)
-  Task({
+  Agent({
     team_name: "[기존-팀-이름]",
     name: "[새-팀원-이름]",
     subagent_type: "general-purpose",
@@ -1025,7 +1024,7 @@ ELIF 라운드 >= 3:
   SendMessage({
     type: "message",
     recipient: "[leader-name]",
-    content: "[문제-팀원]을 [새-팀원]으로 교체했습니다. 새 팀원에게 TEAM_FINDINGS.md와 DEAD_ENDS를 읽게 한 후 [구체적 태스크]를 배정해주세요.",
+    message: "[문제-팀원]을 [새-팀원]으로 교체했습니다. 새 팀원에게 TEAM_FINDINGS.md와 DEAD_ENDS를 읽게 한 후 [구체적 태스크]를 배정해주세요.",
     summary: "팀원 부분 교체 완료"
   })
   ```
@@ -1056,9 +1055,8 @@ ELIF 라운드 >= 3:
 ```
 # 모든 팀원에게 종료 요청 (팀장이 이미 보냈을 수 있음)
 SendMessage({
-  type: "shutdown_request",
-  recipient: "[각 팀원 이름]",
-  content: "작업이 완료되었습니다. 수고하셨습니다."
+  to: "[각 팀원 이름]",
+  message: { type: "shutdown_request" }
 })
 
 # 팀 리소스 정리

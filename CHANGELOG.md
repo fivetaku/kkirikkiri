@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1] - 2026-03-18
+
+### Fixed
+- Task → Agent 도구명 통일 (SKILL.md + command)
+- SendMessage 호출 형식을 실제 도구 API에 맞게 수정 (to/message/summary)
+- 합니다체 → 한다체 혼용 수정
+
 ## [0.12.0] - 2026-03-17
 
 ### Added
