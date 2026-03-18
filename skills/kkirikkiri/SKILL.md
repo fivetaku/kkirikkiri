@@ -980,8 +980,7 @@ ELIF 라운드 >= 3:
 - 팀장에게 보강 지시:
   ```
   SendMessage({
-    type: "message",
-    recipient: "[leader-name]",
+    to: "[leader-name]",
     message: "1라운드 결과에서 [부족한 부분]이 부족합니다. 2라운드 규칙: (1) 검증용 심부름꾼을 스폰하여 1라운드 결과를 독립 검토시키세요. (2) 팀원들의 담당 영역을 교차 배정하세요. (3) 기존 결론에 대한 반론부터 검토하세요.",
     summary: "2라운드 보강 지시 (바이어스 방지 포함)"
   })
@@ -1022,8 +1021,7 @@ ELIF 라운드 >= 3:
 - 팀장에게 새 팀원 합류 알림:
   ```
   SendMessage({
-    type: "message",
-    recipient: "[leader-name]",
+    to: "[leader-name]",
     message: "[문제-팀원]을 [새-팀원]으로 교체했습니다. 새 팀원에게 TEAM_FINDINGS.md와 DEAD_ENDS를 읽게 한 후 [구체적 태스크]를 배정해주세요.",
     summary: "팀원 부분 교체 완료"
   })
