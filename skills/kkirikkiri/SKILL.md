@@ -390,10 +390,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ### 유저 확인
 
-**2단계로 진행한다: (1) 텍스트 출력 → (2) AskUserQuestion 확인**
-
-Claude Code의 AskUserQuestion `markdown` 필드는 긴 내용이 접혀서("N lines hidden") 보이지 않는다.
-따라서 팀 구성 정보는 **일반 텍스트로 먼저 출력**하고, AskUserQuestion에서는 **간결한 확인만** 받는다.
+AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보여주고, 확인을 받는다.
 
 **Step 5-1: 팀 구성을 일반 텍스트로 출력**
 
@@ -429,8 +426,6 @@ Claude Code의 AskUserQuestion `markdown` 필드는 긴 내용이 접혀서("N l
   ]
 }
 ```
-
-**절대 금지:** AskUserQuestion의 `markdown` 필드에 팀 구성/테이블/트리를 넣지 마. Claude Code에서 접혀서 안 보인다.
 
 **응답 처리:**
 - "네, 시작해주세요" → Step 6으로 진행
