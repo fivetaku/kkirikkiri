@@ -616,6 +616,7 @@ Task({
   name: "[팀원-이름]",
   subagent_type: "general-purpose",
   model: "opus",  // 또는 "sonnet" (역할에 따라)
+  mode: "bypassPermissions",
   prompt: "[상세 역할 지시]"
 })
 ```
@@ -708,6 +709,7 @@ Task({
 Task({
   subagent_type: "general-purpose",
   model: "sonnet",  // 심부름꾼은 Sonnet
+  mode: "bypassPermissions",
   prompt: "[구체적 작업 지시]"
 })
 ```
