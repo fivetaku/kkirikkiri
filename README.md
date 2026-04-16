@@ -1,161 +1,157 @@
-# 끼리끼리 (kkirikkiri)
+English | [한국어](README.ko.md)
 
-> 같은 목적끼리 모이는 AI 팀 — 자연어 한마디로 Agent Teams를 자동 구성
+# kkirikkiri (끼리끼리)
 
----
+> **One sentence. A team of AI agents, assembled and running.**
 
-## 이런 분을 위한 도구입니다
+Describe what you want in plain language. kkirikkiri interviews you with 2–3 questions, scans your environment, proposes a team, and executes — all within Claude Code.
 
-- Claude Code Agent Teams를 써보고 싶지만 팀 구성이 어려운 분
-- 리서치, 개발, 분석, 콘텐츠 등 다양한 작업에 AI 팀을 활용하고 싶은 분
-- Codex CLI, Gemini CLI 등 여러 AI를 하나의 팀으로 묶어 쓰고 싶은 분
-- 팀 작업의 품질을 자동으로 검증하고 부족하면 재시도하고 싶은 분
+[Quick Start](#quick-start) • [Why kkirikkiri?](#why-kkirikkiri) • [How it works](#how-it-works) • [Features](#features) • [Requirements](#requirements)
 
 ---
 
-## 어떻게 작동하나요?
+## Quick Start
 
-"리서치 팀 만들어줘" 같은 **한마디**로 Claude Code Agent Teams를 자동 구성하고 실행합니다.
-
-```
-자연어 입력
-    → 의도 파악 (프리셋 매칭)
-    → 인터뷰 (2-3개 질문)
-    → 환경 스캔 (CLI, 연동 도구, 에이전트 탐지)
-    → 비용/시간 안내
-    → 팀 구성 제안 + 확인
-    → Agent Teams 실행
-    → 품질 검증 (자동 판정)
-    → 결과 리포트
-```
-
-### 팀장 규칙
-
-- 팀장은 항상 가장 똑똑한 AI (Opus)
-- 팀장은 코드를 짜지 않음 (계획/배분/검증만)
-- 각 팀원의 역할이 엄격히 분리됨
-
----
-
-## 설치 방법
-
-### 마켓플레이스에서 설치 (추천)
+### 1. Add the marketplace
 
 ```
-/plugin marketplace add https://github.com/fivetaku/gptaku-plugins
+/plugin marketplace add https://github.com/fivetaku/gptaku_plugins.git
+```
+
+### 2. Install
+
+```
 /plugin install kkirikkiri
 ```
 
-### 환경 점검
+### 3. Enable Agent Teams
 
-설치 전 환경이 준비되었는지 확인할 수 있습니다:
-
-```bash
-bash scripts/check-env.sh
+```json
+// ~/.claude/settings.json
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}
 ```
 
-### 처음 시작하기
+### 4. Run
 
-```bash
-/kkirikkiri 리서치 팀 만들어줘
+```
+/kkirikkiri build me a research team
 ```
 
 ---
 
-## 핵심 기능
+## Why kkirikkiri?
 
-### 1. 4종 프리셋 + 자연어 매칭
+- **Natural language in, running team out** — no YAML, no agent definitions to write by hand
+- **Interview-driven** — 2–3 targeted questions replace a long configuration form
+- **Environment-aware** — detects installed tools (Codex CLI, Gemini CLI, `.claude/agents/`) and builds the best team from what you actually have
+- **Multi-model** — Claude, Codex CLI, and Gemini CLI can each take different roles in the same team
+- **Validation loop** — if round 1 output falls short, the team is automatically retried or rebuilt (up to 3 rounds)
+- **Shared memory** — `.kkirikkiri/` files persist across rounds so a replacement team picks up context immediately
+- **Reusable agents** — save team members to `.claude/agents/` for use in future projects
 
-| 프리셋 | 트리거 | 기본 구성 |
-|--------|--------|----------|
-| 리서치 | 조사, 리서치, 찾아줘 | 팀장 + 리서처 2명 |
-| 개발 | 만들어줘, 구현해줘 | 팀장 + 개발자 2명 |
-| 분석 | 분석해줘, 파악해줘 | 팀장 + 탐색자 2명 |
-| 콘텐츠 | 써줘, 문서, README | 팀장 + 작성자 + 검토자 |
-| PM/제품 | 기획, PRD, 전략 | 팀장 + PM + 리서처 |
+The name comes from the Korean idiom **끼리끼리** — *like-minded people naturally gathering together*. Every team is assembled around a shared purpose.
 
-> 프리셋은 출발점. 인터뷰와 환경에 따라 매번 다른 팀이 구성됩니다.
+---
 
-### 2. 공유 메모리
+## How it works
 
-팀이 작업한 내용을 `.kkirikkiri/` 디렉토리에 기록합니다:
-
-| 파일 | 역할 |
-|------|------|
-| `TEAM_PLAN.md` | 작업 계획, 역할 분배, 목표 |
-| `TEAM_PROGRESS.md` | 진행 상황, 완료/미완료 항목 |
-| `TEAM_FINDINGS.md` | 발견 사항, 실패한 접근(DEAD_ENDS) |
-
-팀을 교체해도 이 파일들이 남아 있어서 새 팀이 맥락을 이어받을 수 있습니다.
-
-### 3. 멀티 모델 팀
-
-Claude + Codex CLI + Gemini CLI를 하나의 팀으로 혼합 구성합니다.
-설치된 도구에 따라 자동으로 최적화하고, 없어도 Claude만으로 동작합니다.
-
-### 4. 검증 루프 (최대 3라운드)
-
-1라운드 결과가 부족하면 자동으로 재시도합니다:
-
-| 라운드 | 전략 |
-|--------|------|
-| 1라운드 | 원래 팀이 작업 |
-| 2라운드 | 기존 팀 유지(A) / 전면 교체(B) / 부분 교체(C) 중 자동 판정 |
-| 3라운드 | 무조건 새 팀으로 재구성 |
-
-### 5. 심부름꾼 (서브 에이전트)
-
-팀원이 반복/병렬 작업을 할 때, 작은 AI를 추가로 불러서 동시에 처리합니다.
-
-### 6. 팀 저장/불러오기
-
-잘 동작한 팀 구성을 저장하여 다음에 재사용할 수 있습니다.
-
-```bash
-/kkirikkiri 저번 리서치 팀 다시 써줘
+```
+Natural language input
+    → Step 1: Intent detection + preset matching
+    → Step 2: Environment scan (parallel)
+    → Step 3: Interview — 2–3 AskUserQuestion prompts
+    → Step 4: Dynamic team composition
+    → Step 5: Team proposal + your confirmation
+    → Step 6: Shared memory init + team execution
+    → Step 7: Quality validation loop (up to 3 rounds)
+    → Step 8: Result collection + report
 ```
 
-### 7. 프리셋별 에이전트 자동 추천
-
-`.claude/agents/` 디렉토리에 에이전트가 있으면 자동으로 감지합니다. 프리셋에 맞는 에이전트가 있으면 우선 추천하고, 팀에 바로 투입할 수 있습니다.
-
-| 프리셋 | 추천 에이전트 예시 |
-|--------|------------------|
-| 리서치 | deep-research, data-analyst |
-| 개발 | code-reviewer, architect |
-| 분석 | code-analyzer, security-reviewer |
-| 콘텐츠 | writer, translator |
-
-### 8. 팀원 에이전트 저장
-
-팀 작업 후 잘 동작한 팀원을 `.claude/agents/`에 에이전트로 저장할 수 있습니다. 저장된 에이전트는 다른 프로젝트에서도 재사용 가능하고, 다음 팀 구성 시 자동으로 감지됩니다.
-
-### 9. 스폰 안정성
-
-팀원이 합류에 실패하면 자동으로 재시도합니다:
-1. 동일 설정으로 1회 재시도
-2. 모델 다운그레이드 후 재시도
-3. 나머지 팀원으로 계속 진행
+**Team leader rules:**
+- Leader is always the most capable model available (Opus by default)
+- Leader plans, delegates, and validates — never writes code directly
+- Each member has a strictly scoped role
 
 ---
 
-## 구성요소
+## Features
 
-| 구성요소 | 설명 |
-|----------|------|
-| 커맨드 | `/kkirikkiri` — 자연어 입력 → 인터뷰 → 팀 생성 라우터 |
-| 스킬 | `kkirikkiri` — 8단계 워크플로우 (의도파악→환경스캔→인터뷰→팀구성→실행→검증→리포트) |
-| 스크립트 | `run-cli.sh` — Codex/Gemini CLI 백그라운드 실행 |
-| 스크립트 | `check-env.sh` — 필수/선택 환경 자동 점검 |
+### Presets
+
+Five built-in presets with natural-language trigger matching:
+
+| Preset | Trigger words | Default team |
+|--------|--------------|--------------|
+| Research | research, find, look up, compare | Leader + 2 researchers |
+| Development | build, implement, code, add feature | Leader + 2 developers |
+| Analysis | analyze, review, inspect, audit | Leader + 2 explorers |
+| Content | write, document, README, blog post | Leader + writer + reviewer |
+| Product/PM | PRD, strategy, roadmap, OKR, GTM | Leader + PM + researcher |
+
+Presets are a starting point. The interview and environment scan shape the final team every time.
+
+### Shared memory
+
+The team writes to `.kkirikkiri/` in your project root:
+
+| File | Purpose |
+|------|---------|
+| `TEAM_PLAN.md` | Task plan, role assignments, goals |
+| `TEAM_PROGRESS.md` | Live progress — completed and pending items |
+| `TEAM_FINDINGS.md` | Discoveries, dead ends (`DEAD_ENDS`) |
+
+If a team member is replaced mid-task, the new member reads these files and catches up immediately.
+
+### Validation loop
+
+| Round | Strategy |
+|-------|---------|
+| Round 1 | Original team executes |
+| Round 2 | Auto-judge: keep (A) / full replacement (B) / partial swap (C) |
+| Round 3 | Full team rebuild, unconditionally |
+
+### Multi-model support
+
+Claude + Codex CLI + Gemini CLI can each take different roles in the same team. kkirikkiri auto-detects what is installed and optimizes accordingly. Claude-only works fine if no external CLIs are present.
+
+### Agent auto-detection and reuse
+
+If `.claude/agents/` contains agent definitions, kkirikkiri detects them and recommends relevant ones per preset:
+
+| Preset | Example agents |
+|--------|---------------|
+| Research | deep-research, data-analyst |
+| Development | code-reviewer, architect |
+| Analysis | code-analyzer, security-reviewer |
+| Content | writer, translator |
+
+After a successful run, you can save well-performing team members back to `.claude/agents/` for reuse in other projects.
+
+### Spawn stability
+
+If a team member fails to join:
+1. Retry once with the same configuration
+2. Retry with a downgraded model
+3. Continue with the remaining team members
+
+### Team save and reload
+
+```
+/kkirikkiri use the research team from last time
+```
 
 ---
 
-## 요구사항
+## Requirements
 
-### 필수
+### Required
 
-- **Claude Code** (최신 버전)
-- **Agent Teams 활성화**:
+- **Claude Code** (latest)
+- **Agent Teams feature flag:**
   ```json
   // ~/.claude/settings.json
   {
@@ -164,32 +160,38 @@ Claude + Codex CLI + Gemini CLI를 하나의 팀으로 혼합 구성합니다.
     }
   }
   ```
-- **tmux**: `brew install tmux` (macOS) / `apt install tmux` (Linux)
-- **Node.js** (외부 CLI 연동용)
+- **tmux:** `brew install tmux` (macOS) / `apt install tmux` (Linux)
+- **Node.js** (for external CLI integrations)
 
-### 선택 (멀티 모델)
+### Optional (multi-model)
 
 ```bash
-npm install -g @openai/codex       # Codex CLI (코드 분석/리뷰)
-npm install -g @google/gemini-cli  # Gemini CLI (디자인/대규모 분석)
+npm install -g @openai/codex       # Codex CLI — code analysis and review
+npm install -g @google/gemini-cli  # Gemini CLI — design and large-scale analysis
 ```
 
-> 없어도 동작합니다. Claude만으로 팀을 구성합니다.
+Works without these. Claude handles the full team on its own.
+
+### Cost reference
+
+| Team size | Estimated time | Cost level |
+|-----------|---------------|-----------|
+| 2–3 members | 5–15 min | Low |
+| 4–5 members | 10–30 min | Medium |
+| 5+ members, multi-round | 30 min–1 hr | High |
+
+Reduce team size or use Codex/Gemini CLI to lower costs.
 
 ---
 
-## 비용 참고
-
-| 팀 규모 | 예상 시간 | 비용 수준 |
-|---------|----------|----------|
-| 2-3명 | 5-15분 | 낮음 |
-| 4-5명 | 10-30분 | 중간 |
-| 5명+ 멀티라운드 | 30분-1시간 | 높음 |
-
-> 팀원 수를 줄이거나, Codex/Gemini CLI를 활용하면 비용을 절약할 수 있습니다.
-
----
-
-## 라이선스
+## License
 
 MIT
+
+---
+
+<div align="center">
+
+**Like-minded agents, gathered for your goal.**
+
+</div>
