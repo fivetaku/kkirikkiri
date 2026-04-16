@@ -1,6 +1,6 @@
 ---
 name: kkirikkiri
-description: 자연어 한마디로 AI 에이전트 팀을 자동 구성하고 실행하는 스킬. "/kkirikkiri", "팀 만들어줘", "리서치 팀", "끼리끼리", "팀 구성해줘" 같은 요청에 사용됩니다.
+description: Auto-assembles and runs an AI agent team from one natural-language sentence — interviews the user with 2-3 questions, proposes specialized agents, then executes in parallel. Korean triggers: "/kkirikkiri", "팀 만들어줘", "리서치 팀", "끼리끼리", "팀 구성해줘". English triggers: "build a team", "research team", "agent team", "kkirikkiri".
 ---
 
 # 끼리끼리 Team Builder Skill
