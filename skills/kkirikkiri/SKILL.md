@@ -725,7 +725,7 @@ Codex CLI로 [역할]을 수행합니다. 다음 절차를 따르세요:
 ```
 SendMessage({
   type: "message",
-  recipient: "[leader-name]",
+  to: "[leader-name]",
   content: "팀이 구성되었습니다. 공유 메모리 파일(.kkirikkiri/)이 초기화되었습니다. TEAM_PLAN.md를 읽고 팀원들에게 태스크를 배분해주세요.",
   summary: "팀 구성 완료, 태스크 배분 시작"
 })
@@ -831,7 +831,7 @@ ELIF 라운드 >= 3:
 # 모든 팀원에게 종료 요청 (팀장이 이미 보냈을 수 있음)
 SendMessage({
   type: "shutdown_request",
-  recipient: "[각 팀원 이름]",
+  to: "[각 팀원 이름]",
   content: "작업이 완료되었습니다. 수고하셨습니다."
 })
 
