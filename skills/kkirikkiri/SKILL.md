@@ -28,6 +28,7 @@ description: Auto-assembles and runs an AI agent team from one natural-language 
 > **Lazy read — 필요한 단계 진입 직전에만 읽는다:**
 > - Step 3 직전: `interview-guide.md` + `metaphor-guide.md` (인터뷰 방법론 + 용어 변환)
 > - Step 4 직전: `agency-agents-catalog.md` (에이전트 패턴 + 3-tier 선택)
+>   - Tier 2 진입 시: `agent-index.md` (README 기반 인덱스 — When to Use 매칭 후 fetch)
 > - Step 6-2 직전: `shared-memory.md` (공유 메모리 초기화 절차)
 > - Step 6-4 직전: `team-prompts.md` (팀원/팀장 프롬프트 템플릿)
 
@@ -333,21 +334,18 @@ agency_agents_installed = true 이면:
   없으면 → Tier 2로
 ```
 
-**Tier 2 — GitHub에서 완전 핏 에이전트 페치 (정확히 일치할 때만)**
+**Tier 2 — agent-index 기반 온디맨드 페치**
 ```
-조건: 역할 키워드가 agency-agents의 특정 파일명과 명확하게 매핑될 때
-  ✅ 페치 해야 할 예: "Godot 멀티플레이어" → game-development/godot/godot-multiplayer-engineer.md
-                    "Solidity 감사자"    → specialized/blockchain-security-auditor.md
-                    "샤오홍수 마케터"    → marketing/marketing-xiaohongshu-specialist.md
-  ❌ 페치 하지 말 예: "개발자", "리서처", "분석가" → 일반적 → Tier 3으로
+조건: 역할이 구체적이고 전문 도메인이 명확할 때 (확신 80% 이상)
+  → agency-agents-catalog.md의 Tier 2 절차 참조 (agent-index.md 읽기 → When to Use 매칭 → fetch → 캐시)
 
-판단 기준: 역할명이 도메인+플랫폼+기술스택 조합으로 매우 구체적일 때만 페치
-  → 확신이 80% 미만이면 Tier 3으로 넘어갈 것 (페치 비용 > 생성 비용)
+캐시 확인 먼저: .kkirikkiri/agent-cache/{filename}.md 존재하면 fetch 없이 즉시 사용
+캐시 없으면: WebFetch → raw.githubusercontent.com → 결과 캐시에 Write
 
-방법:
-  WebFetch "https://api.github.com/repos/msitarzewski/agency-agents/contents/{카테고리}/"
-  파일 목록에서 정확히 일치하는 파일 확인 (없으면 즉시 Tier 3 전환)
-  일치 파일 있으면 → WebFetch로 해당 파일 내용 가져와서 프롬프트로 사용
+✅ 페치 예: "Godot 멀티플레이어", "Solidity 감사자", "리액트 UI 구현"
+❌ Tier 3으로: "개발자", "리서처", "분석가" (너무 일반적, When to Use 명확히 매핑 불가)
+
+  → 확신 80% 미만이면 즉시 Tier 3 (fetch 비용 > 생성 비용)
   subagent_type: "general-purpose"
 ```
 

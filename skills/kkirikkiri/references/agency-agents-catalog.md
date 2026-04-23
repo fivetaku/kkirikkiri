@@ -17,22 +17,30 @@ Task({
 })
 ```
 
-### 모드 2: GitHub에서 완전 핏 에이전트 페치 (Tier 2)
-역할 키워드가 특정 파일명과 명확히 매핑될 때만 사용. 확신 80% 미만이면 Tier 3으로.
+### 모드 2: agent-index 기반 온디맨드 페치 (Tier 2)
 
-GitHub 디렉토리 구조:
-```
-https://api.github.com/repos/msitarzewski/agency-agents/contents/{카테고리}/
-카테고리: academic | design | engineering | finance | game-development |
-          marketing | paid-media | product | project-management | sales |
-          spatial-computing | specialized | strategy | support | testing
-```
+**반드시 `agent-index.md`를 읽은 후 매칭한다.** 파일명 추측 금지.
 
-완전 핏 예시:
-- "Godot 개발자"    → game-development/godot/godot-gameplay-scripter.md ✅
-- "Solidity 감사자" → specialized/blockchain-security-auditor.md ✅
-- "샤오홍수 마케터" → marketing/marketing-xiaohongshu-specialist.md ✅
-- "개발자", "리서처" → Tier 3으로 (너무 일반적) ❌
+**절차:**
+1. Read("references/agent-index.md") — "When to Use" 컬럼으로 역할 매칭
+2. 확신 80% 이상인 경우만 fetch. 미만이면 즉시 Tier 3
+3. 캐시 확인: `.kkirikkiri/agent-cache/{filename}.md` 존재하면 fetch 없이 바로 사용
+4. 캐시 없으면: WebFetch → `https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{path}`
+5. 결과를 `.kkirikkiri/agent-cache/{filename}.md`에 Write (다음 실행 시 재사용)
+
+**매칭 예시:**
+- "Godot 개발자"    → `game-development/godot/godot-gameplay-scripter.md` ✅
+- "Solidity 감사자" → `specialized/blockchain-security-auditor.md` ✅
+- "리액트 UI 구현"  → `engineering/engineering-frontend-developer.md` ✅
+- "개발자", "리서처" → Tier 3 (너무 일반적, When to Use 명확히 매핑 불가) ❌
+
+**fetch 후 사용:**
+```javascript
+Task({
+  subagent_type: "general-purpose",
+  model: "opus",
+  prompt: `[fetch한 에이전트 파일 내용 전체] + [공유 메모리 경로] + [추가 컨텍스트]`
+})
 
 ### 모드 3: 내제화 패턴 기반 동적 생성 (기본값, Tier 3)
 아래 10개 에이전트 패턴을 참고해서 `general-purpose` + 압축 프롬프트 생성.
