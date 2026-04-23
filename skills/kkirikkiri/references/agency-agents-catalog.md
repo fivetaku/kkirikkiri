@@ -1,80 +1,154 @@
 # Agency Agents 카탈로그
 
 > 출처: https://github.com/msitarzewski/agency-agents
-> 150+개 전문 에이전트 컬렉션. 이 파일은 10개 대표 에이전트를 내제화한 레퍼런스다.
 
 ---
 
-## 사용 방법
+## 3-Tier 에이전트 선택
 
-### 모드 1: agency-agents 설치된 경우
-`~/.claude/agents/`에 agency-agents 파일이 있으면 Task 스폰 시 subagent_type을 직접 지정한다.
+**Tier 1 — 로컬 설치됨** (`vibe:` 필드 있는 파일 감지 시)
 ```javascript
-Task({
-  subagent_type: "engineering-rapid-prototyper",  // 파일명 (확장자 제외)
-  model: "opus",
-  prompt: "[추가 컨텍스트 + 공유 메모리 경로만 추가]"
-})
+Task({ subagent_type: "engineering-rapid-prototyper", prompt: "[컨텍스트만 추가]" })
 ```
 
-### 모드 2: agent-index 기반 온디맨드 페치 (Tier 2)
+**Tier 2 — 아래 인덱스에서 검색 → 해당 파일 fetch**
+1. 아래 에이전트 인덱스에서 **When to Use** 기준으로 역할 매칭
+2. 확신 80% 이상만. 미만이면 Tier 3
+3. 캐시 확인: `.kkirikkiri/agent-cache/{filename}.md` 있으면 즉시 사용
+4. 없으면: `WebFetch("https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{path}")`
+5. 결과를 `.kkirikkiri/agent-cache/{filename}.md` 에 Write
 
-**반드시 `agent-index.md`를 읽은 후 매칭한다.** 파일명 추측 금지.
-
-**절차:**
-1. Read("references/agent-index.md") — "When to Use" 컬럼으로 역할 매칭
-2. 확신 80% 이상인 경우만 fetch. 미만이면 즉시 Tier 3
-3. 캐시 확인: `.kkirikkiri/agent-cache/{filename}.md` 존재하면 fetch 없이 바로 사용
-4. 캐시 없으면: WebFetch → `https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{path}`
-5. 결과를 `.kkirikkiri/agent-cache/{filename}.md`에 Write (다음 실행 시 재사용)
-
-**매칭 예시:**
-- "Godot 개발자"    → `game-development/godot/godot-gameplay-scripter.md` ✅
-- "Solidity 감사자" → `specialized/blockchain-security-auditor.md` ✅
-- "리액트 UI 구현"  → `engineering/engineering-frontend-developer.md` ✅
-- "개발자", "리서처" → Tier 3 (너무 일반적, When to Use 명확히 매핑 불가) ❌
-
-**fetch 후 사용:**
 ```javascript
-Task({
-  subagent_type: "general-purpose",
-  model: "opus",
-  prompt: `[fetch한 에이전트 파일 내용 전체] + [공유 메모리 경로] + [추가 컨텍스트]`
-})
-
-### 모드 3: 내제화 패턴 기반 동적 생성 (기본값, Tier 3)
-아래 10개 에이전트 패턴을 참고해서 `general-purpose` + 압축 프롬프트 생성.
-에이전트 프롬프트 구조: `정체성 → 핵심 미션 → 절대 규칙 → 성공 기준`
-**코드 예시, 워크플로우 단계 설명, 소통 예시 포함 금지** (토큰 절약)
-
-### 설치 감지 방법 (Step 2 환경 스캔)
-```bash
-# agency-agents 포맷 감지: emoji/vibe 필드가 있는 frontmatter
-ls ~/.claude/agents/*.md 2>/dev/null | head -5 | xargs grep -l "^vibe:" 2>/dev/null
+Task({ subagent_type: "general-purpose", model: "opus",
+  prompt: `[fetch한 에이전트 파일 전체 내용] + [공유 메모리 경로] + [추가 컨텍스트]` })
 ```
-- 결과 있음 → 설치됨, subagent_type 매칭 사용
-- 결과 없음 → 미설치, 동적 생성 사용
 
-### 설치 제안 시 명령어
-```bash
-gh repo clone msitarzewski/agency-agents /tmp/agency-agents --depth=1 && \
-  /tmp/agency-agents/scripts/install.sh --tool claude-code --no-interactive && \
-  rm -rf /tmp/agency-agents
-```
+**Tier 3 — 아래 10개 패턴으로 동적 생성** (일반적 역할: "개발자", "리서처" 등)
 
 ---
 
-## 프리셋별 에이전트 매핑
+## 에이전트 인덱스 (Tier 2 검색용)
 
-| kkirikkiri 프리셋 | 1순위 에이전트 | 2순위 에이전트 |
-|---|---|---|
-| development | engineering-rapid-prototyper | engineering-frontend-developer |
-| analysis | engineering-software-architect | engineering-code-reviewer |
-| research | marketing-growth-hacker | marketing-content-creator |
-| content | engineering-technical-writer | marketing-content-creator |
-| product | product-manager | marketing-growth-hacker |
-| 팀장 (모든 프리셋) | specialized-agents-orchestrator | — |
-| QA/검증 | testing-reality-checker | — |
+### Engineering
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| Frontend Developer | engineering/engineering-frontend-developer.md | Modern web apps, pixel-perfect UIs, React/Vue/Angular |
+| Backend Architect | engineering/engineering-backend-architect.md | Server-side systems, microservices, cloud infrastructure |
+| Mobile App Builder | engineering/engineering-mobile-app-builder.md | Native/cross-platform mobile apps, iOS/Android |
+| AI Engineer | engineering/engineering-ai-engineer.md | ML features, data pipelines, AI-powered apps |
+| DevOps Automator | engineering/engineering-devops-automator.md | CI/CD, deployment automation, monitoring |
+| Rapid Prototyper | engineering/engineering-rapid-prototyper.md | Quick PoC, hackathon, MVP, fast iteration |
+| Senior Developer | engineering/engineering-senior-developer.md | Complex implementations, Laravel/Livewire |
+| Security Engineer | engineering/engineering-security-engineer.md | Application security, vulnerability assessment |
+| Code Reviewer | engineering/engineering-code-reviewer.md | PR reviews, code quality gates |
+| Software Architect | engineering/engineering-software-architect.md | Architecture decisions, system design, DDD |
+| Technical Writer | engineering/engineering-technical-writer.md | Developer docs, API reference, tutorials |
+| SRE | engineering/engineering-sre.md | Production reliability, SLOs, observability |
+| Data Engineer | engineering/engineering-data-engineer.md | Data pipelines, lakehouse, ETL/ELT |
+| Database Optimizer | engineering/engineering-database-optimizer.md | PostgreSQL/MySQL tuning, slow query debugging |
+| Git Workflow Master | engineering/engineering-git-workflow-master.md | Git workflow design, history cleanup |
+| Incident Response Commander | engineering/engineering-incident-response-commander.md | Production incidents, post-mortems |
+| Solidity Smart Contract Engineer | engineering/engineering-solidity-smart-contract-engineer.md | Smart contracts, DeFi, EVM |
+| Embedded Firmware Engineer | engineering/engineering-embedded-firmware-engineer.md | IoT, ESP32/STM32, RTOS |
+| Codebase Onboarding Engineer | engineering/engineering-codebase-onboarding-engineer.md | Helping new devs understand unfamiliar repos |
+| Voice AI Integration Engineer | engineering/engineering-voice-ai-integration-engineer.md | Speech-to-text, Whisper, transcription |
+
+### Design
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| UI Designer | design/design-ui-designer.md | Interface creation, component libraries, design systems |
+| UX Researcher | design/design-ux-researcher.md | User testing, usability research |
+| UX Architect | design/design-ux-architect.md | CSS systems, developer-friendly foundations |
+| Brand Guardian | design/design-brand-guardian.md | Brand strategy, identity, guidelines |
+| Whimsy Injector | design/design-whimsy-injector.md | Micro-interactions, delight, Easter eggs |
+| Image Prompt Engineer | design/design-image-prompt-engineer.md | Midjourney/DALL-E/Stable Diffusion prompts |
+
+### Marketing
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| Growth Hacker | marketing/marketing-growth-hacker.md | Explosive user growth, viral loops, conversion |
+| Content Creator | marketing/marketing-content-creator.md | Content strategy, copywriting, brand storytelling |
+| SEO Specialist | marketing/marketing-seo-specialist.md | Organic search growth, technical SEO |
+| Social Media Strategist | marketing/marketing-social-media-strategist.md | Multi-platform social campaigns |
+| LinkedIn Content Creator | marketing/marketing-linkedin-content-creator.md | LinkedIn growth, B2B content |
+| TikTok Strategist | marketing/marketing-tiktok-strategist.md | TikTok growth, Gen Z audience |
+| Reddit Community Builder | marketing/marketing-reddit-community-builder.md | Reddit strategy, community trust |
+| AI Citation Strategist | marketing/marketing-ai-citation-strategist.md | Improving brand visibility in AI responses (AEO/GEO) |
+| Video Optimization Specialist | marketing/marketing-video-optimization-specialist.md | YouTube SEO, channel growth |
+
+### Product
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| Product Manager | product/product-manager.md | Full lifecycle, PRDs, roadmap, GTM |
+| Trend Researcher | product/product-trend-researcher.md | Market research, competitive analysis |
+| Sprint Prioritizer | product/product-sprint-prioritizer.md | Sprint planning, backlog management |
+
+### Sales
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| Outbound Strategist | sales/sales-outbound-strategist.md | Pipeline via research-driven outreach |
+| Discovery Coach | sales/sales-discovery-coach.md | Discovery calls, SPIN/Gap Selling |
+| Deal Strategist | sales/sales-deal-strategist.md | Deal scoring, MEDDPICC, competitive positioning |
+| Sales Engineer | sales/sales-engineer.md | Technical demos, POC scoping |
+| Pipeline Analyst | sales/sales-pipeline-analyst.md | Pipeline reviews, forecast accuracy |
+
+### Testing & QA
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| Reality Checker | testing/testing-reality-checker.md | Quality validation, assumption challenging |
+| Accessibility Auditor | testing/testing-accessibility-auditor.md | WCAG compliance, screen reader testing |
+
+### Specialized
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| Agents Orchestrator | specialized/agents-orchestrator.md | Complex multi-agent coordination |
+| Blockchain Security Auditor | specialized/blockchain-security-auditor.md | Smart contract audits, Solidity vulnerabilities |
+| MCP Builder | specialized/specialized-mcp-builder.md | Building MCP servers for AI agents |
+| Workflow Architect | specialized/specialized-workflow-architect.md | Mapping system paths before coding |
+| Compliance Auditor | specialized/compliance-auditor.md | SOC 2, ISO 27001, HIPAA |
+
+### Finance
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| Financial Analyst | finance/finance-financial-analyst.md | Financial modeling, forecasting, business intelligence |
+| Investment Researcher | finance/finance-investment-researcher.md | Due diligence, portfolio analysis, equity research |
+
+### Game Development
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| Game Designer | game-development/game-designer.md | Game mechanics, GDD, progression systems |
+| Narrative Designer | game-development/narrative-designer.md | Branching narratives, dialogue systems |
+| Unity Architect | game-development/unity/unity-architect.md | Large-scale Unity projects, ECS |
+| Unreal Systems Engineer | game-development/unreal-engine/unreal-systems-engineer.md | Unreal C++/Blueprint, GAS |
+| Godot Gameplay Scripter | game-development/godot/godot-gameplay-scripter.md | Godot game logic, GDScript |
+
+### Project Management
+
+| Agent | Path | When to Use |
+|-------|------|-------------|
+| Senior Project Manager | project-management/project-manager-senior.md | Converting specs to tasks, scope management |
+
+---
+
+## 프리셋별 권장 에이전트 (Tier 2 우선순위)
+
+| 프리셋 | 팀장 | 1순위 팀원 | 2순위 팀원 |
+|--------|------|-----------|-----------|
+| development | agents-orchestrator | engineering-rapid-prototyper | engineering-frontend-developer |
+| analysis | agents-orchestrator | engineering-software-architect | engineering-code-reviewer |
+| research | agents-orchestrator | marketing-growth-hacker | marketing-content-creator |
+| content | agents-orchestrator | engineering-technical-writer | marketing-content-creator |
+| product | agents-orchestrator | product-manager | product-trend-researcher |
+| QA/검증 | — | testing-reality-checker | — |
 
 ---
 

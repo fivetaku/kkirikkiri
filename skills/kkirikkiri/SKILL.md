@@ -28,7 +28,7 @@ description: Auto-assembles and runs an AI agent team from one natural-language 
 > **Lazy read — 필요한 단계 진입 직전에만 읽는다:**
 > - Step 3 직전: `interview-guide.md` + `metaphor-guide.md` (인터뷰 방법론 + 용어 변환)
 > - Step 4 직전: `agency-agents-catalog.md` (에이전트 패턴 + 3-tier 선택)
->   - Tier 2 진입 시: `agent-index.md` (README 기반 인덱스 — When to Use 매칭 후 fetch)
+>   - Tier 2 진입 시: agency-agents README를 직접 fetch하여 인덱스로 사용 (When to Use 매칭 후 개별 파일 fetch)
 > - Step 6-2 직전: `shared-memory.md` (공유 메모리 초기화 절차)
 > - Step 6-4 직전: `team-prompts.md` (팀원/팀장 프롬프트 템플릿)
 
@@ -334,13 +334,14 @@ agency_agents_installed = true 이면:
   없으면 → Tier 2로
 ```
 
-**Tier 2 — agent-index 기반 온디맨드 페치**
+**Tier 2 — README 인덱스 기반 온디맨드 페치**
 ```
 조건: 역할이 구체적이고 전문 도메인이 명확할 때 (확신 80% 이상)
-  → agency-agents-catalog.md의 Tier 2 절차 참조 (agent-index.md 읽기 → When to Use 매칭 → fetch → 캐시)
+  → agency-agents-catalog.md의 Tier 2 절차 참조
+     (README fetch → When to Use 매칭 → 개별 파일 fetch → 캐시)
 
 캐시 확인 먼저: .kkirikkiri/agent-cache/{filename}.md 존재하면 fetch 없이 즉시 사용
-캐시 없으면: WebFetch → raw.githubusercontent.com → 결과 캐시에 Write
+캐시 없으면: README fetch → 매칭 → 개별 파일 fetch → 캐시에 Write
 
 ✅ 페치 예: "Godot 멀티플레이어", "Solidity 감사자", "리액트 UI 구현"
 ❌ Tier 3으로: "개발자", "리서처", "분석가" (너무 일반적, When to Use 명확히 매핑 불가)
