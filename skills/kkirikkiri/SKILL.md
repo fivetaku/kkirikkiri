@@ -249,13 +249,7 @@ Task({
 
 ## Step 3: 인터뷰
 
-> **🚨 MANDATORY READ — Step 3 시작 전 반드시 실행:**
-> ```
-> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/interview-guide.md")
-> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/metaphor-guide.md")
-> ```
-> 인터뷰 질문 설계 원칙, 바이브코더 대응 전략, 기술 용어→일상 표현 변환표가 여기 있다.
-> 이 파일들을 읽지 않고 AskUserQuestion을 호출하지 말 것.
+> 사전 준비(SKILL.md 상단 lazy-read 표 참조)에서 이미 `interview-guide.md` + `metaphor-guide.md`를 읽었다고 가정. 컨텍스트가 흐릿하면 다시 읽을 것.
 
 presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQuestion 도구를 호출하여** 진행한다. 질문/옵션을 텍스트로 출력하면 안 된다.
 
@@ -299,12 +293,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ## Step 4: 동적 팀 구성
 
-> **🚨 MANDATORY READ — Step 4 시작 전 반드시 실행:**
-> ```
-> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/agency-agents-catalog.md")
-> ```
-> 10개 에이전트 패턴, 3-tier 선택 로직(설치→GitHub→동적생성), 프리셋별 매핑 테이블이 여기 있다.
-> 이 파일을 읽지 않고 팀원 역할을 결정하지 말 것. Step 6 역할 파일 생성 시에도 이 파일 기준 밀도 사용.
+> 사전 준비에서 이미 `agency-agents-catalog.md`를 읽었다고 가정. Step 6-4 (팀원 스폰) 직전 MANDATORY READ에서 다시 확인하므로 여기서는 생략.
 
 인터뷰 답변 + 환경 스캔 결과를 종합하여 최종 팀을 구성한다.
 
@@ -922,8 +911,7 @@ TeamDelete()
 상세 내용은 리포트 파일을 확인해주세요.
 ```
 
-> 🚨 MANDATORY READ — 결과 전달 후 반드시 실행:
-> Read("references/output-guide.md") — Auto-memory 저장 유도 형식 + 팀 저장 파일 형식 + 에이전트 저장 절차
+> 결과 전달 후 팀 저장 / 에이전트 저장 절차는 `references/output-guide.md` 참조 (필요시).
 
 ### 8-3. 팀 저장 (선택)
 
