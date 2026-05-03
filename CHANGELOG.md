@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.15.1] - 2026-05-04
+
+### Removed
+- SKILL.md MANDATORY READ wrapper 6회 → 3회로 축소 (Step 3 / Step 4 / Step 8-2 위치 삭제)
+  - 보존: Step 6-2 (공유 메모리 초기화), Step 6-4 (팀원 스폰), Step 7-6 (2라운드 진입) — 컨텍스트 손실 가장 큰 시점
+
+### Changed
+- team-prompts.md 5 archetype 페르소나 형용사 강제(`성격: [3-4 형용사]`) → 자유 narrative (`정체성: 한 줄 자유 narrative — generic 형용사 회피`)
+- 측정 결과 4/5 archetype이 generic adjective cluster 공유 → 자유화로 차별성 회복
+
+### Preserved
+- 5 archetype (Researcher/Builder/Analyst/Critic/Leader) 검증 다중성
+- TeamCreate / TaskCreate / SendMessage / TaskUpdate API 스키마
+- AskUserQuestion JSON 호출 (parser contract)
+- 공유 메모리 경로 + 4단계 작업 완료 protocol
+- Leader R&R "직접 코드/검색/문서 작성 금지" (역할 분리)
+- 43 lock-in 체크리스트 (워크플로우 끝의 안전 가드 — Gemini "앵커링" 비판 인정 후 보존)
+
 ## [0.15.0] - 2026-05-03
 
 ### Changed — 멀티세션 격리 (Phase 1)
