@@ -14,9 +14,9 @@ Task({ subagent_type: "engineering-rapid-prototyper", prompt: "[컨텍스트만 
 **Tier 2 — 아래 인덱스에서 검색 → 해당 파일 fetch**
 1. 아래 에이전트 인덱스에서 **When to Use** 기준으로 역할 매칭
 2. 확신 80% 이상만. 미만이면 Tier 3
-3. 캐시 확인: `.kkirikkiri/agent-cache/{filename}.md` 있으면 즉시 사용
+3. 캐시 확인: `{KKIRIKKIRI_DIR}/agent-cache/{filename}.md` 있으면 즉시 사용 (이 변수는 Step 6-1에서 정의됨)
 4. 없으면: `WebFetch("https://raw.githubusercontent.com/msitarzewski/agency-agents/main/{path}")`
-5. 결과를 `.kkirikkiri/agent-cache/{filename}.md` 에 Write
+5. 결과를 `{KKIRIKKIRI_DIR}/agent-cache/{filename}.md` 에 Write
 
 ```javascript
 Task({ subagent_type: "general-purpose", model: "opus",

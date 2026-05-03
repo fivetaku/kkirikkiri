@@ -50,7 +50,7 @@ Describe what you want in plain language. kkirikkiri interviews you with 2–3 q
 - **Environment-aware** — detects installed tools (Codex CLI, Gemini CLI, `.claude/agents/`) and builds the best team from what you actually have
 - **Multi-model** — Claude, Codex CLI, and Gemini CLI can each take different roles in the same team
 - **Validation loop** — if round 1 output falls short, the team is automatically retried or rebuilt (up to 3 rounds)
-- **Shared memory** — `.kkirikkiri/` files persist across rounds so a replacement team picks up context immediately
+- **Shared memory** — `.kkirikkiri/teams/{team_name}/` files persist across rounds so a replacement team picks up context immediately; each session gets its own directory to prevent multi-session collisions
 - **Reusable agents** — save team members to `.claude/agents/` for use in future projects
 
 The name comes from the Korean idiom **끼리끼리** — *like-minded people naturally gathering together*. Every team is assembled around a shared purpose.
@@ -96,15 +96,16 @@ Presets are a starting point. The interview and environment scan shape the final
 
 ### Shared memory
 
-The team writes to `.kkirikkiri/` in your project root:
+The team writes to `.kkirikkiri/teams/{team_name}/` in your project root (session-scoped, no collision between concurrent sessions):
 
 | File | Purpose |
 |------|---------|
 | `TEAM_PLAN.md` | Task plan, role assignments, goals |
 | `TEAM_PROGRESS.md` | Live progress — completed and pending items |
 | `TEAM_FINDINGS.md` | Discoveries, dead ends (`DEAD_ENDS`) |
+| `report.md` | Canonical final report for this session |
 
-If a team member is replaced mid-task, the new member reads these files and catches up immediately.
+Saved teams are stored cross-session under `.kkirikkiri/shared/saved-teams/`. If a team member is replaced mid-task, the new member reads these files and catches up immediately.
 
 ### Validation loop
 

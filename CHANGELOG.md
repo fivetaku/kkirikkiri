@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.15.0] - 2026-05-03
+
+### Changed — 멀티세션 격리 (Phase 1)
+
+같은 워크스페이스에서 `/kkirikkiri`를 여러 Claude Code 세션이 동시에 실행할 때 공유 문서가 섞이거나 유실되던 문제 해결. 모든 working state를 `team_name` 기반 세션 디렉토리로 격리.
+
+- **새 디렉토리 레이아웃**:
+  - `.kkirikkiri/teams/{team_name}/` — 세션 격리 (TEAM_PLAN/PROGRESS/FINDINGS, agents/, prompts/, agent-cache/, archive/, report.md)
+  - `.kkirikkiri/shared/saved-teams/{team_name}.md` — 크로스 세션 공유 (사용자 명시 저장)
+- **team_name 형식 변경**: `kkirikkiri-{preset}-{YYYYMMDD-HHMM}-{rand4}` (4자리 hex suffix로 동시 시작 충돌 방지)
+- **Step 6-1**에 `KKIRIKKIRI_DIR` 변수 정의 + 디렉토리 생성 + team_name 사용자 출력
+- **레거시 마이그레이션 셰임**: 기존 평면 레이아웃 자동 감지 → `teams/legacy-{epoch}/`로 1회 이동 (mkdir 락 기반 race-safe)
+- **archive 로직 재설계**: 인터-세션 archive 제거, within-session 재구성용으로만 보존 (`{KKIRIKKIRI_DIR}/archive/`)
+- **canonical report**: `kkirikkiri-report-{timestamp}.md` (루트) → `{KKIRIKKIRI_DIR}/report.md`
+- 6개 파일 경로 일괄 변수화: SKILL.md, team-prompts.md, shared-memory.md, output-guide.md, agency-agents-catalog.md, README
+
+### Removed
+
+- `shared-memory.md`의 인터-세션 archive 로직 (Step 6-2 진입 시 다른 세션의 in-flight 파일을 archive로 밀어내던 데이터 유실 원인)
+- "이전 세션 TEAM_FINDINGS.md 아카이빙 확인" 체크리스트 항목 (격리 후 불필요)
+
+### Notes
+
+- Phase 2 (예정): `index.json` 활성 세션 레지스트리 + agent-cache atomic write + stale 세션 GC
+- Agent Council (Claude/Codex/Gemini) 설계 검토 후 합의 7건 반영
+
 ## [0.12.0] - 2026-03-17
 
 ### Added

@@ -25,9 +25,10 @@
 
 ```
 ## 공유 메모리 (반드시 활용)
-- 작업 계획: {프로젝트루트}/.kkirikkiri/TEAM_PLAN.md
-- 진행 상황: {프로젝트루트}/.kkirikkiri/TEAM_PROGRESS.md
-- 발견 사항: {프로젝트루트}/.kkirikkiri/TEAM_FINDINGS.md
+> 이 변수는 Step 6-1에서 정의됨: KKIRIKKIRI_DIR={프로젝트루트}/.kkirikkiri/teams/{team_name}
+- 작업 계획: {KKIRIKKIRI_DIR}/TEAM_PLAN.md
+- 진행 상황: {KKIRIKKIRI_DIR}/TEAM_PROGRESS.md
+- 발견 사항: {KKIRIKKIRI_DIR}/TEAM_FINDINGS.md
 
 규칙:
 - 작업 시작 → TEAM_PROGRESS.md에 "시작" 기록
@@ -324,8 +325,9 @@ Task({
 - 심부름꾼은 팀원이 직접 관리 (팀장 개입 없음)
 
 ## 팀원 역할 파일 인덱스
-- .kkirikkiri/agents/[팀원1].md — [역할 한줄 설명]
-- .kkirikkiri/agents/[팀원2].md — [역할 한줄 설명]
+> 이 변수는 Step 6-1에서 정의됨: KKIRIKKIRI_DIR={프로젝트루트}/.kkirikkiri/teams/{team_name}
+- {KKIRIKKIRI_DIR}/agents/[팀원1].md — [역할 한줄 설명]
+- {KKIRIKKIRI_DIR}/agents/[팀원2].md — [역할 한줄 설명]
 팀원 역할 혼동 시 해당 파일 읽도록 지시
 
 ## 품질 검증 (1라운드 결과 수신 시)
@@ -341,7 +343,8 @@ Task({
 
 ## 작업 완료 시
 1. TEAM_PLAN.md + TEAM_PROGRESS.md + TEAM_FINDINGS.md 전부 읽기
-2. 최종 통합 리포트 작성: {프로젝트루트}/kkirikkiri-report-{timestamp}.md
+2. 최종 통합 리포트 작성: {KKIRIKKIRI_DIR}/report.md (정식 경로)
+   선택: 프로젝트 루트에 편의 복사본 생성 — Bash("cp {KKIRIKKIRI_DIR}/report.md {프로젝트루트}/kkirikkiri-report-{timestamp}.md")
 3. SendMessage(type: "message")로 메인 세션에 완료 보고
 4. 모든 팀원에게 SendMessage(type: "shutdown_request") 전송
 

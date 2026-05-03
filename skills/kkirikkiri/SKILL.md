@@ -134,10 +134,10 @@ Auto-memory를 2가지 용도로 활용한다:
 팀장이 교체 팀원에게 전달할 컨텍스트 인덱스:
 ```
 프로젝트 공유 메모리 (반드시 읽을 것):
-- {프로젝트루트}/.kkirikkiri/TEAM_PLAN.md — 전체 계획 + 역할 배분 (최우선)
-- {프로젝트루트}/.kkirikkiri/TEAM_PROGRESS.md — 현재 진행 상황
-- {프로젝트루트}/.kkirikkiri/TEAM_FINDINGS.md — 지금까지 발견한 것들
-- {프로젝트루트}/.kkirikkiri/DEAD_ENDS — 실패한 접근 (이 방법은 하지 마)
+- {KKIRIKKIRI_DIR}/TEAM_PLAN.md — 전체 계획 + 역할 배분 (최우선)
+- {KKIRIKKIRI_DIR}/TEAM_PROGRESS.md — 현재 진행 상황
+- {KKIRIKKIRI_DIR}/TEAM_FINDINGS.md — 지금까지 발견한 것들
+- {KKIRIKKIRI_DIR}/TEAM_FINDINGS.md (DEAD_ENDS 섹션) — 실패한 접근 (이 방법은 하지 마)
 ```
 
 교체 팀원 온보딩 순서: DEAD_ENDS(하지 말 것) → TEAM_PLAN(할 것) → PROGRESS(현재 상황) → FINDINGS(참고)
@@ -340,7 +340,7 @@ agency_agents_installed = true 이면:
   → agency-agents-catalog.md의 Tier 2 절차 참조
      (README fetch → When to Use 매칭 → 개별 파일 fetch → 캐시)
 
-캐시 확인 먼저: .kkirikkiri/agent-cache/{filename}.md 존재하면 fetch 없이 즉시 사용
+캐시 확인 먼저: {KKIRIKKIRI_DIR}/agent-cache/{filename}.md 존재하면 fetch 없이 즉시 사용
 캐시 없으면: README fetch → 매칭 → 개별 파일 fetch → 캐시에 Write
 
 ✅ 페치 예: "Godot 멀티플레이어", "Solidity 감사자", "리액트 UI 구현"
@@ -417,9 +417,9 @@ agency_agents_installed = true 이면:
 ⏱️ 예상 소요 시간: [규모에 따라 10-30분]
 
 📁 팀원 역할 파일 (시작 후 생성됩니다):
-  .kkirikkiri/agents/[팀장명].md
-  .kkirikkiri/agents/[역할명1].md
-  .kkirikkiri/agents/[역할명2].md
+  {KKIRIKKIRI_DIR}/agents/[팀장명].md
+  {KKIRIKKIRI_DIR}/agents/[역할명1].md
+  {KKIRIKKIRI_DIR}/agents/[역할명2].md
 
 이대로 진행할까요?
 ```
@@ -506,14 +506,82 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 
 ### 6-1. 팀 생성
 
+> **SESSION-SCOPED PATHS — 이 단계에서 KKIRIKKIRI_DIR을 정의한다. 이후 모든 파일 경로는 이 변수를 기준으로 한다.**
+
+#### team_name 생성
+
+```bash
+# timestamp: YYYYMMDD-HHMM (8+4 = 12자)
+# rand4: 4자리 랜덤 hex (충돌 방지)
+RAND4=$(openssl rand -hex 2 2>/dev/null || printf '%04x' $((RANDOM % 65536)))
+team_name="kkirikkiri-{preset}-$(date +%Y%m%d-%H%M)-${RAND4}"
+# 예: kkirikkiri-research-20260503-1430-a3f2
+```
+
+#### KKIRIKKIRI_DIR 정의
+
+```
+KKIRIKKIRI_DIR={프로젝트루트}/.kkirikkiri/teams/{team_name}
+```
+
+> **이 변수를 세션 전체에서 일관되게 사용한다. 모든 팀 파일은 이 경로 아래에 생성된다.**
+
+#### 사용자에게 team_name 출력
+
+팀 생성 직후 사용자에게 세션 핸들을 알린다:
+
+```
+팀이 생성되었습니다.
+세션 ID: {team_name}
+작업 디렉토리: {KKIRIKKIRI_DIR}
+```
+
+#### 레거시 마이그레이션 시임 (flat → session-scoped)
+
+이전 버전(flat layout)의 `.kkirikkiri/TEAM_PLAN.md`가 존재하면 한 번만 마이그레이션한다.
+`mkdir` 기반 락으로 동시 세션 간 레이스 컨디션을 방지한다.
+
+```bash
+# 레거시 감지 + 마이그레이션 (한 번만 실행)
+if [ -f "{프로젝트루트}/.kkirikkiri/TEAM_PLAN.md" ]; then
+  if mkdir "{프로젝트루트}/.kkirikkiri/.migration.lock" 2>/dev/null; then
+    LEGACY_TS=$(date +%s)
+    mkdir -p "{프로젝트루트}/.kkirikkiri/teams/legacy-${LEGACY_TS}"
+    mv "{프로젝트루트}/.kkirikkiri/TEAM_PLAN.md" \
+       "{프로젝트루트}/.kkirikkiri/teams/legacy-${LEGACY_TS}/" 2>/dev/null || true
+    mv "{프로젝트루트}/.kkirikkiri/TEAM_PROGRESS.md" \
+       "{프로젝트루트}/.kkirikkiri/teams/legacy-${LEGACY_TS}/" 2>/dev/null || true
+    mv "{프로젝트루트}/.kkirikkiri/TEAM_FINDINGS.md" \
+       "{프로젝트루트}/.kkirikkiri/teams/legacy-${LEGACY_TS}/" 2>/dev/null || true
+    mv "{프로젝트루트}/.kkirikkiri/agents" \
+       "{프로젝트루트}/.kkirikkiri/teams/legacy-${LEGACY_TS}/" 2>/dev/null || true
+    mv "{프로젝트루트}/.kkirikkiri/prompts" \
+       "{프로젝트루트}/.kkirikkiri/teams/legacy-${LEGACY_TS}/" 2>/dev/null || true
+    mv "{프로젝트루트}/.kkirikkiri/agent-cache" \
+       "{프로젝트루트}/.kkirikkiri/teams/legacy-${LEGACY_TS}/" 2>/dev/null || true
+    echo "레거시 파일이 legacy-${LEGACY_TS}/로 이동되었습니다."
+  fi
+  # mkdir 실패 = 다른 세션이 이미 마이그레이션 중 → 스킵
+fi
+```
+
+#### 세션 디렉토리 생성
+
+```bash
+mkdir -p {KKIRIKKIRI_DIR}/{agents,prompts,agent-cache,archive}
+mkdir -p {프로젝트루트}/.kkirikkiri/shared/saved-teams
+```
+
+#### TeamCreate 호출
+
 ```
 TeamCreate({
-  team_name: "kkirikkiri-{preset}-{timestamp}",
+  team_name: "{team_name}",
   description: "[팀 목표 요약]"
 })
 ```
 
-team_name 예시: `kkirikkiri-research-0227-1430`
+team_name 예시: `kkirikkiri-research-20260503-1430-a3f2`
 
 ### 6-2. 공유 메모리 초기화 (기억 외부화)
 
@@ -527,12 +595,12 @@ team_name 예시: `kkirikkiri-research-0227-1430`
 > ```
 > Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/shared-memory.md")
 > ```
-> 아카이빙 로직, TEAM_PLAN/PROGRESS/FINDINGS 파일 템플릿, 공유 메모리 규칙이 모두 여기 있다.
+> 세션 격리 모델, TEAM_PLAN/PROGRESS/FINDINGS 파일 템플릿, 공유 메모리 규칙이 모두 여기 있다.
 > 이 파일을 읽지 않고 공유 메모리를 초기화하지 말 것.
 
 ### 6-2.5. 에이전트 정의 문서 생성
 
-팀원 스폰 전에 각 팀원의 역할 정의를 `.kkirikkiri/agents/`에 파일로 저장한다.
+팀원 스폰 전에 각 팀원의 역할 정의를 `{KKIRIKKIRI_DIR}/agents/`에 파일로 저장한다.
 
 **왜 필요한가:**
 - 팀원이 기억을 잃었을 때 파일 읽으면 역할 즉시 복구
@@ -540,14 +608,12 @@ team_name 예시: `kkirikkiri-research-0227-1430`
 - 팀장이 팀원에게 "당신 역할 파일 읽어" 지시 가능
 - 교체 팀원이 전임자 역할을 파악하는 온보딩 문서
 
-```bash
-Bash("mkdir -p {프로젝트루트}/.kkirikkiri/agents")
-```
+디렉토리는 Step 6-1에서 이미 생성됨 (`mkdir -p {KKIRIKKIRI_DIR}/agents`).
 
 각 팀원마다 아래 **압축 포맷**으로 Write (전체 프롬프트 복사 금지):
 
 ```
-파일 경로: {프로젝트루트}/.kkirikkiri/agents/{역할명}.md
+파일 경로: {KKIRIKKIRI_DIR}/agents/{역할명}.md
 목표 크기: 30-50줄 이내 (코드 예시, 긴 설명 제외)
 ```
 
@@ -583,9 +649,9 @@ created: [timestamp]
 - [측정 가능한 지표 2]
 
 ## 공유 메모리
-- 계획: {프로젝트루트}/.kkirikkiri/TEAM_PLAN.md
-- 진행: {프로젝트루트}/.kkirikkiri/TEAM_PROGRESS.md
-- 발견: {프로젝트루트}/.kkirikkiri/TEAM_FINDINGS.md
+- 계획: {KKIRIKKIRI_DIR}/TEAM_PLAN.md
+- 진행: {KKIRIKKIRI_DIR}/TEAM_PROGRESS.md
+- 발견: {KKIRIKKIRI_DIR}/TEAM_FINDINGS.md
 ```
 
 **압축 기준 (중간 밀도 — 역할 수행 가능 + 토큰 절약):**
@@ -604,22 +670,22 @@ agency-agents-catalog.md의 10개 압축 포맷이 기준 밀도.
 **팀원 스폰 시 프롬프트에 자신의 파일 경로 포함:**
 ```
 ## 내 역할 정의 파일
-{프로젝트루트}/.kkirikkiri/agents/{역할명}.md
+{KKIRIKKIRI_DIR}/agents/{역할명}.md
 컨텍스트가 흐릿해지면 이 파일을 Read로 다시 읽어 역할을 복구하세요.
 ```
 
 **팀장 프롬프트에 전체 팀원 파일 인덱스 포함:**
 ```
 ## 팀원 역할 파일 인덱스
-- .kkirikkiri/agents/[팀원1].md — [역할 한줄 설명]
-- .kkirikkiri/agents/[팀원2].md — [역할 한줄 설명]
+- {KKIRIKKIRI_DIR}/agents/[팀원1].md — [역할 한줄 설명]
+- {KKIRIKKIRI_DIR}/agents/[팀원2].md — [역할 한줄 설명]
 팀원이 역할을 혼동하면 해당 파일을 읽도록 지시하세요.
 ```
 
 **아카이빙 규칙:**
-- `agents/` 디렉토리는 세션 간 유지 (삭제 안 함)
-- 새 세션에서 같은 역할명이면 덮어쓰기
-- `saved-teams/`에 팀 저장 시 `agents/` 디렉토리도 함께 보존
+- `agents/` 디렉토리는 세션 디렉토리(`{KKIRIKKIRI_DIR}/agents/`) 안에 격리됨 — 세션 간 충돌 없음
+- Phase 1: 세션이 끝나도 `{KKIRIKKIRI_DIR}/` 전체가 유지됨 (참조 가능)
+- `saved-teams/`에 팀 저장 시 `{KKIRIKKIRI_DIR}/` 경로를 함께 기록하여 재구성 가능
 
 ### 6-3. 태스크 생성
 
@@ -646,7 +712,7 @@ TaskCreate({
 ```
 // Tier 1: agency-agents 설치된 경우 → 전문 에이전트 직접 사용
 Task({
-  team_name: "kkirikkiri-{preset}-{timestamp}",
+  team_name: "{team_name}",
   name: "[팀원-이름]",
   subagent_type: "engineering-rapid-prototyper",  // 실제 설치된 파일명
   model: "opus",
@@ -655,11 +721,11 @@ Task({
 
 // Tier 2/3: 미설치 or 동적 생성 → general-purpose + 압축 프롬프트
 Task({
-  team_name: "kkirikkiri-{preset}-{timestamp}",
+  team_name: "{team_name}",
   name: "[팀원-이름]",
   subagent_type: "general-purpose",
   model: "opus",
-  prompt: "[6-2.5에서 생성한 .kkirikkiri/agents/{역할명}.md 읽기 지시 + 추가 컨텍스트]"
+  prompt: "[6-2.5에서 생성한 {KKIRIKKIRI_DIR}/agents/{역할명}.md 읽기 지시 + 추가 컨텍스트]"
 })
 ```
 
@@ -667,7 +733,7 @@ Task({
 역할 정의를 프롬프트에 직접 쓰지 않고 파일 읽기로 대체:
 ```
 당신의 역할 정의가 파일에 저장되어 있습니다.
-먼저 Read("{프로젝트루트}/.kkirikkiri/agents/{역할명}.md")로 읽고 역할을 파악하세요.
+먼저 Read("{KKIRIKKIRI_DIR}/agents/{역할명}.md")로 읽고 역할을 파악하세요.
 그 다음 아래 지시를 따르세요:
 [태스크 지시]
 ```
@@ -700,11 +766,11 @@ Task({
 Codex CLI로 [역할]을 수행합니다. 다음 절차를 따르세요:
 
 1. 프롬프트 파일 작성:
-   Write 도구로 .kkirikkiri/prompts/{task-id}.md에 분석 요청 작성
+   Write 도구로 {KKIRIKKIRI_DIR}/prompts/{task-id}.md에 분석 요청 작성
 
 2. CLI 실행:
    Bash(run_in_background=true):
-   "bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-cli.sh start --provider codex --prompt-file .kkirikkiri/prompts/{task-id}.md"
+   "bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-cli.sh start --provider codex --prompt-file {KKIRIKKIRI_DIR}/prompts/{task-id}.md"
    → 출력되는 JOB_DIR 경로를 저장
 
 3. 완료 대기:
@@ -726,7 +792,7 @@ Codex CLI로 [역할]을 수행합니다. 다음 절차를 따르세요:
 SendMessage({
   type: "message",
   to: "[leader-name]",
-  content: "팀이 구성되었습니다. 공유 메모리 파일(.kkirikkiri/)이 초기화되었습니다. TEAM_PLAN.md를 읽고 팀원들에게 태스크를 배분해주세요.",
+  content: "팀이 구성되었습니다. 공유 메모리 파일({KKIRIKKIRI_DIR}/)이 초기화되었습니다. TEAM_PLAN.md를 읽고 팀원들에게 태스크를 배분해주세요.",
   summary: "팀 구성 완료, 태스크 배분 시작"
 })
 ```
@@ -881,10 +947,10 @@ TeamDelete()
 }
 ```
 
-저장 시 `.kkirikkiri/saved-teams/` 디렉토리에 기록:
+저장 시 `shared/saved-teams/` 디렉토리에 기록 (크로스 세션 공유):
 
 ```
-Write → {프로젝트루트}/.kkirikkiri/saved-teams/{preset}-{날짜}.md
+Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 ```
 
 → 파일 형식 및 저장된 팀 불러오기 절차: `output-guide.md` 참조 (위 MANDATORY READ)
@@ -915,10 +981,10 @@ Write → {프로젝트루트}/.kkirikkiri/saved-teams/{preset}-{날짜}.md
 
 ### 8-4. 공유 메모리 정리
 
-작업 완료 후 `.kkirikkiri/` 디렉토리는 유지한다 (나중에 참조 가능).
+작업 완료 후 `{KKIRIKKIRI_DIR}/` 디렉토리는 유지한다 (나중에 참조 가능).
 사용자가 원하면 삭제:
 ```
-"작업 기록 파일(.kkirikkiri/)을 삭제할까요? 남겨두면 나중에 참고할 수 있어요."
+"이번 세션 작업 기록({KKIRIKKIRI_DIR}/)을 삭제할까요? 남겨두면 나중에 참고할 수 있어요."
 ```
 
 ---
@@ -986,13 +1052,13 @@ Write → {프로젝트루트}/.kkirikkiri/saved-teams/{preset}-{날짜}.md
 - [ ] 모든 인터뷰 질문에 "(추천)" 기본 옵션 포함
 - [ ] 모든 인터뷰 질문에 "잘 모르겠어요 → 추천대로" 옵션 포함
 - [ ] 팀 구성 제안 시 역할을 일상 용어로 설명
-- [ ] 팀 구성 제안 시 `.kkirikkiri/agents/` 파일 경로 목록 함께 표시
+- [ ] 팀 구성 제안 시 `{KKIRIKKIRI_DIR}/agents/` 파일 경로 목록 함께 표시
 - [ ] 팀 실행 전 반드시 유저 확인
 - [ ] 환경 스캔에서 Codex/Gemini CLI + agency-agents 설치 여부 확인
 - [ ] 프리셋 매칭 실패 시 범용 인터뷰로 전환
 - [ ] 결과 리포트에 팀 구성 + 작업 과정 + 산출물 포함
 - [ ] 팀 생성 직후 공유 메모리 3종 파일 초기화 (TEAM_PLAN, TEAM_PROGRESS, TEAM_FINDINGS)
-- [ ] 팀원 스폰 전 .kkirikkiri/agents/{역할명}.md 압축 정의 파일 생성
+- [ ] 팀원 스폰 전 {KKIRIKKIRI_DIR}/agents/{역할명}.md 압축 정의 파일 생성
 - [ ] 팀원 프롬프트에 자신의 역할 파일 경로 포함 (컨텍스트 복구용)
 - [ ] 팀장 프롬프트에 전체 팀원 파일 인덱스 포함
 - [ ] 팀장 프롬프트에 공유 메모리 관리 의무 포함
@@ -1007,5 +1073,4 @@ Write → {프로젝트루트}/.kkirikkiri/saved-teams/{preset}-{날짜}.md
 - [ ] 작업 완료 후 팀 저장 여부 사용자에게 확인
 - [ ] 저장된 팀 재사용 요청 시 saved-teams 디렉토리에서 불러오기
 - [ ] 팀원 idle 3회 연속 시 팀장에게 교체 지시
-- [ ] 이전 세션의 TEAM_FINDINGS.md가 있으면 아카이빙 여부를 사용자에게 확인
-- [ ] 이전 세션의 TEAM_FINDINGS.md가 있으면 아카이빙 여부를 사용자에게 확인
+- [ ] 세션 내 재구성(7-6 방식 B) 시 이전 라운드 TEAM_FINDINGS.md 내용을 새 팀에 전달

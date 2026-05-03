@@ -21,9 +21,8 @@
 - 다음에 개선할 점: [예: 리서처에게 소스 범위를 명시적으로 분할]
 
 공유 메모리 위치:
-- .kkirikkiri/TEAM_PLAN.md — 계획
-- .kkirikkiri/TEAM_FINDINGS.md — 결과
-- .kkirikkiri/DEAD_ENDS — 실패한 접근
+- {KKIRIKKIRI_DIR}/TEAM_PLAN.md — 계획
+- {KKIRIKKIRI_DIR}/TEAM_FINDINGS.md — 결과 (DEAD_ENDS 섹션 포함)
 ```
 
 이 요약이 Auto-memory에 저장되면 다음 세션에서:
@@ -35,7 +34,7 @@
 
 ## 팀 저장 파일 형식 (Step 8-3)
 
-저장 경로: `{프로젝트루트}/.kkirikkiri/saved-teams/{preset}-{날짜}.md`
+저장 경로: `{프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md`
 
 ```markdown
 # 저장된 팀: [팀 이름]
@@ -66,7 +65,7 @@
 ### 저장된 팀 불러오기
 
 사용자가 "저번 리서치 팀 다시 써줘" 유사 요청 시:
-1. `.kkirikkiri/saved-teams/` 디렉토리 스캔
+1. `.kkirikkiri/shared/saved-teams/` 디렉토리 스캔
 2. 관련 팀 파일 Read로 확인
 3. 저장된 구성 기반으로 Step 4로 직행 (인터뷰 생략)
 4. 환경이 달라졌으면 자동 조정
