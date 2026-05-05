@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.15.2] - 2026-05-05
+
+### Fixed — AskUserQuestion 응답 후 멈춤 회귀 (v0.15.1 핫픽스)
+
+v0.15.1에서 MANDATORY READ wrapper를 6→3회로 축소하면서, **AskUserQuestion 응답 수신 후 모델이 다음 도구 호출 없이 정지하는 회귀**가 발생했다. Step 3/Step 4/Step 8-2 진입부의 도구 호출 트리거(`🚨 MANDATORY READ` 박스)가 *"이미 읽었다고 가정"*, *"여기서는 생략"* 같은 부정형 안내문으로 대체되면서 모델이 다음 액션 앵커를 잃은 것이 직접 원인. Agent Council (Claude/Codex/Gemini) 검토를 거쳐 핫픽스 확정.
+
+- **Step 3/Step 4/Step 7-6/Step 8-2 진입부에 `🚨 EXECUTE NOW: Read(...)` 박스 복원** — 부정형 안내문을 명령형 도구 호출 트리거로 전환
+- **모든 AskUserQuestion 블록에 Continuation Contract 추가** (Step 3/Step 5/Step 7-3/Step 8-3/Step 8-3-1) — "응답 수신 후 즉시 다음 Step의 도구 호출로 진행, 텍스트만 출력하고 멈춤 금지" 명시
+- **사전 준비 섹션 재작성** — 17줄 "사전 준비 후 즉시 AskUserQuestion 호출" vs 28-33줄 lazy-read 표 "Step 진입 직전에만 읽는다"의 충돌 해소. 사전 준비는 `presets.md`만 읽고, 나머지는 각 Step 본문의 `EXECUTE NOW` 박스가 실제 트리거임을 명시. lazy-read 표를 "Per-step EXECUTE Read 인덱스"로 명령형 전환.
+- **`KKIRIKKIRI_DIR` placeholder 정의를 사전 준비 섹션에 추가** — Step 6-1에서야 정의되던 변수가 Step 2/Step 4 캐시 확인/team-prompts 템플릿에서 미리 참조되며 발생하던 변수 미정의 참조 문제 해소
+
+### Council 합의 사항
+
+- 직접 원인은 "MANDATORY READ 박스 → 부정형 안내문" 변환으로 인한 도구 호출 트리거 상실 ("Action Vacuum 상태"). LLM 도구 호출은 상태머신이 아니라 현재 컨텍스트에서 샘플링되는 다음 액션이므로, 단계 본문의 `EXECUTE/MANDATORY + 도구명 + 코드블록`이 상단 lazy-read 표보다 훨씬 강한 트리거임 — 토큰 절약 리팩토링 시 도구 호출 앵커는 줄이지 않는 것이 원칙
+- `KKIRIKKIRI_DIR` 변수 선언 시점 문제는 보조 원인 (Context Noise)이며 멈춤의 직접 원인은 아님 — 함께 해소
+- `team-prompts.md` 페르소나 자유화 (v0.15.1)는 멈춤 직접 원인 아님 — 별도 마이너 패치로 분리
+
 ## [0.15.1] - 2026-05-04
 
 ### Removed

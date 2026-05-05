@@ -14,23 +14,37 @@ description: Auto-assembles and runs an AI agent team from one natural-language 
 ## WHEN TRIGGERED - EXECUTE IMMEDIATELY
 
 **이 문서는 참고 문서가 아니라 실행 지시서다.**
-- 첫 번째 action: 사전 준비(레퍼런스 파일 읽기) 후 즉시 Step 1~3의 AskUserQuestion 도구를 호출
+- 첫 번째 action: 사전 준비(`presets.md` 읽기) 후 즉시 Step 1로 진행
+- 이후 각 Step 진입 시 본문의 `EXECUTE NOW: Read(...)` 박스를 즉시 실행한다 (per-step lazy read)
 - 텍스트 출력 후 질문하지 않는다. 도구를 먼저 호출한다.
 - 모든 질문은 AskUserQuestion 도구 호출로만 진행한다.
+- **AskUserQuestion 응답 수신 후 즉시 다음 Step으로 계속 진행한다.** 응답 요약/텍스트만 출력하고 종료하면 워크플로우 위반 — 반드시 다음 Step의 Read 박스나 도구 호출을 이어서 실행한다.
 
 ---
 
 ## 사전 준비
 
-이 스킬이 호출되면 반드시 다음 레퍼런스 파일을 읽는다:
+이 스킬이 호출되면 즉시 다음 레퍼런스 파일을 읽는다:
 - `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/presets.md` — 프리셋 정의 + 인터뷰 질문 (Step 1 매칭에 필수)
 
-> **Lazy read — 필요한 단계 진입 직전에만 읽는다:**
-> - Step 3 직전: `interview-guide.md` + `metaphor-guide.md` (인터뷰 방법론 + 용어 변환)
-> - Step 4 직전: `agency-agents-catalog.md` (에이전트 패턴 + 3-tier 선택)
->   - Tier 2 진입 시: agency-agents README를 직접 fetch하여 인덱스로 사용 (When to Use 매칭 후 개별 파일 fetch)
-> - Step 6-2 직전: `shared-memory.md` (공유 메모리 초기화 절차)
-> - Step 6-4 직전: `team-prompts.md` (팀원/팀장 프롬프트 템플릿)
+**Per-step EXECUTE Read 인덱스 — 각 Step 본문의 `EXECUTE NOW` 박스가 실제 트리거다:**
+
+| Step 진입 | Read 대상 |
+|----------|-----------|
+| Step 3 진입 | `interview-guide.md` + `metaphor-guide.md` |
+| Step 4 진입 | `agency-agents-catalog.md` (Tier 2 진입 시 agency-agents README 추가 fetch) |
+| Step 6-2 진입 | `shared-memory.md` |
+| Step 6-4 진입 | `team-prompts.md` |
+| Step 7-6 진입 | `validation-guide.md` |
+| Step 8-2 직후 | `output-guide.md` |
+
+> 위 표는 인덱스다. 실제 도구 호출은 각 Step 본문의 `🚨 EXECUTE NOW: Read(...)` 박스를 발견하면 즉시 실행한다. 박스를 건너뛰지 말 것.
+
+**KKIRIKKIRI_DIR 변수 — 세션 격리 경로 placeholder:**
+```
+KKIRIKKIRI_DIR={프로젝트루트}/.kkirikkiri/teams/{team_name}
+```
+실제 값은 Step 6-1에서 `team_name` 생성과 함께 substitute된다. Step 2/4/team-prompts에서 미리 참조될 때는 placeholder 형태로 유지하고, Step 6-1 이후에는 실제 경로로 substitute한다.
 
 **PM 프리셋 매칭 시 추가로 읽는다:**
 - `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/pm-frameworks.md` — PM 프레임워크 레퍼런스 (PRD, OST, Strategy Canvas 등)
@@ -249,7 +263,13 @@ Task({
 
 ## Step 3: 인터뷰
 
-> 사전 준비(SKILL.md 상단 lazy-read 표 참조)에서 이미 `interview-guide.md` + `metaphor-guide.md`를 읽었다고 가정. 컨텍스트가 흐릿하면 다시 읽을 것.
+> **🚨 EXECUTE NOW — Step 3 진입 즉시 실행:**
+> ```
+> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/interview-guide.md")
+> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/metaphor-guide.md")
+> ```
+> 인터뷰 질문 설계 원칙, 바이브코더 대응 전략, 기술 용어→일상 표현 변환표가 여기 있다.
+> 이 두 Read 호출 없이 AskUserQuestion을 호출하지 말 것.
 
 presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQuestion 도구를 호출하여** 진행한다. 질문/옵션을 텍스트로 출력하면 안 된다.
 
@@ -281,19 +301,29 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
    }
    ```
 
-3. **절대 금지**:
+3. **AskUserQuestion 응답 수신 후 — Continuation Contract:**
+   - 모든 질문 응답을 받으면 **즉시 Step 4로 진행한다**
+   - 응답을 텍스트로 요약만 하고 멈추는 것은 워크플로우 위반
+   - Step 4의 `EXECUTE NOW: Read(...)` 박스가 다음 액션이다 — 박스를 즉시 실행할 것
+
+4. **절대 금지**:
    - 4개 이상 질문 금지
    - 기술 용어(Opus, Sonnet, MCP, Agent Teams) 유저에게 노출 금지
    - 설명 없이 옵션만 나열 금지
 
-4. **generic 프리셋일 경우**:
+5. **generic 프리셋일 경우**:
    - Q1으로 목표 파악 → Q2로 유형 선택 → 해당 프리셋 인터뷰 이어서 진행
 
 ---
 
 ## Step 4: 동적 팀 구성
 
-> 사전 준비에서 이미 `agency-agents-catalog.md`를 읽었다고 가정. Step 6-4 (팀원 스폰) 직전 MANDATORY READ에서 다시 확인하므로 여기서는 생략.
+> **🚨 EXECUTE NOW — Step 4 진입 즉시 실행:**
+> ```
+> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/agency-agents-catalog.md")
+> ```
+> 10개 에이전트 패턴, 3-tier 선택 로직(설치→GitHub→동적생성), 프리셋별 매핑 테이블이 여기 있다.
+> 이 Read 호출 없이 팀원 역할을 결정하지 말 것. Step 6 역할 파일 생성 시에도 이 파일 기준 밀도 사용.
 
 인터뷰 답변 + 환경 스캔 결과를 종합하여 최종 팀을 구성한다.
 
@@ -482,10 +512,10 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 }
 ```
 
-**응답 처리:**
-- "네, 시작해주세요" → Step 6으로 진행
-- "조정하고 싶어요" → 어떤 부분을 바꾸고 싶은지 추가 질문 후 Step 4로
-- "처음부터 다시" → Step 1로
+**응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
+- "네, 시작해주세요" → 즉시 Step 6-1의 team_name 생성 + KKIRIKKIRI_DIR 정의 + TeamCreate 호출로 진행
+- "조정하고 싶어요" → 어떤 부분을 바꿀지 추가 AskUserQuestion 호출 후 Step 4 재실행
+- "처음부터 다시" → Step 1로 복귀, presets 재매칭부터 시작
 
 ---
 
@@ -863,12 +893,20 @@ ELIF 라운드 >= 3:
 }
 ```
 
+**응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
+- "네, 보강해주세요" → 즉시 Step 7-6의 EXECUTE NOW Read 박스 실행 후 방식 A/B/C 선택
+- "이 정도면 괜찮아요" → 즉시 Step 8-1로 진행 (TeamDelete 호출)
+- "처음부터 다시" → Step 1로 복귀
+
 ### 7-6. 2라운드 실행 방식 (3가지)
 
 사용자가 "보강해주세요" 선택 시, 자동 판정 결과에 따라 A/B/C 중 선택:
 
-> 🚨 MANDATORY READ — 2라운드 진입 직전 반드시 실행:
-> Read("references/validation-guide.md") — 방식 A/B/C 상세 절차 + 라운드별 권장 전략
+> **🚨 EXECUTE NOW — 2라운드 진입 즉시 실행:**
+> ```
+> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/validation-guide.md")
+> ```
+> 방식 A/B/C 상세 절차 + 라운드별 권장 전략이 여기 있다.
 
 ### 7-7. 최대 라운드 제한
 
@@ -911,7 +949,12 @@ TeamDelete()
 상세 내용은 리포트 파일을 확인해주세요.
 ```
 
-> 결과 전달 후 팀 저장 / 에이전트 저장 절차는 `references/output-guide.md` 참조 (필요시).
+> **🚨 EXECUTE NOW — 결과 전달 직후 실행:**
+> ```
+> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/output-guide.md")
+> ```
+> Auto-memory 저장 유도 형식, 팀 저장 파일 형식, 에이전트 저장 절차가 여기 있다.
+> 이 Read 호출 없이 Step 8-3 (팀 저장)으로 진행하지 말 것.
 
 ### 8-3. 팀 저장 (선택)
 
@@ -934,6 +977,10 @@ TeamDelete()
   ]
 }
 ```
+
+**응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
+- "네, 저장해주세요" → 즉시 아래 Write 호출로 `shared/saved-teams/{team_name}.md` 생성 후 Step 8-3-1로 진행
+- "아니요, 괜찮아요" → 즉시 Step 8-3-1로 진행 (팀원 에이전트 저장 단계)
 
 저장 시 `shared/saved-teams/` 디렉토리에 기록 (크로스 세션 공유):
 
@@ -965,7 +1012,11 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 }
 ```
 
-→ 저장 절차 (팀원 선택 → 프롬프트 정제 → 파일 생성 → 충돌 처리): `output-guide.md` 참조 (위 MANDATORY READ)
+**응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
+- "네, 저장할게요" → 즉시 `output-guide.md`의 저장 절차에 따라 팀원 선택 AskUserQuestion 호출, 이후 Write 호출로 `.claude/agents/{역할명}.md` 생성, 완료 후 Step 8-4로 진행
+- "괜찮아요" → 즉시 Step 8-4로 진행 (공유 메모리 정리 안내)
+
+→ 저장 절차 (팀원 선택 → 프롬프트 정제 → 파일 생성 → 충돌 처리): `output-guide.md` 참조 (Step 8-2 EXECUTE NOW로 이미 로드됨)
 
 ### 8-4. 공유 메모리 정리
 
