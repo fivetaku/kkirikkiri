@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.16.1] - 2026-05-10
+
+### Added — v0.16.0 검증 후속 보강 (3건)
+
+v0.16.0 출시 직후 검증 agent(가상 GraphQL Federation 보안+가스 시나리오)가 발견한 미세 갭 3건 보강. 합성 메커니즘은 의도대로 동작 확인됨(16/16 체크 통과). 이번 패치는 에지 케이스 명료화에 한정.
+
+- **`team-prompts.md` Builder 도메인 적응 가이드에 운영(SRE/DevOps) 결 보강**:
+  - "한 번 동작" → "1만 시간 동작" 차이 명시
+  - SLO/error budget/on-call runbook/canary/MTTR/RTO/RPO/관측성 요소를 도메인 살 채집 가이드에 추가
+  - 도메인 KPI 예시: 99.9% SLO / MTTR < 30분 / 변경 실패율 < 15% / 배포 lead time < 1일
+  - 별도 Operator archetype 신설하지 않고 Builder 카드의 도메인 살로 흡수 (보수적 옵션)
+- **`team-prompts.md` Leader 카드의 도메인 살 가이드 신설**:
+  - Leader는 직접 산출 없음 → 도메인 살 4종이 메타 차원으로 변환됨을 명문화
+  - 메타 KPI 실수치 예시: 통합 리포트 외부 검토 통과율 90%+ / 평균 1.5라운드 / 팀원 idle 평균 1회 이하 / 태스크 완료율 90%+ / 결정 사후 추적성 100%
+  - 도메인별 게이트 변주 명시 (리서치 = 교차검증 3소스 게이트, 개발 = 테스트 게이트, 디자인 = 사용성 5명 게이트)
+- **`subagent-synthesis.md` 도메인 살 채집 우선순위 통일 + 심부름꾼 정의 명문화**:
+  - "심부름꾼 = Task(general-purpose, sonnet, bypassPermissions)" 코드블록 추가 — 새 사용자가 SKILL.md/synthesis 분산된 채집 우선순위에 혼란 없게
+  - 1회 fetch 원칙 명시
+  - 길이 가이드 표에 archetype 예시 + Leader 메타 행 추가 (단순 보조 모호성 해소)
+
+### 검증 결과 (v0.16.0)
+- 16/16 자체 검증 체크 통과 (8항목 × 2가상 카드)
+- 카드 길이 105~110줄 (목표 100~150 범위)
+- agency-agents 외부 fetch 0회로 농밀 카드 합성 성공
+- "한 팀원 = 한 archetype" 분리 규칙 자동 작동
+- 흔한 오매칭(Builder 함정) 회피
+
 ## [0.16.0] - 2026-05-10
 
 ### Changed — 동적 합성 중심 구조로 재편 (archetype 5종 → 7종)
