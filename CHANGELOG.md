@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.16.0] - 2026-05-10
+
+### Changed — 동적 합성 중심 구조로 재편 (archetype 5종 → 7종)
+
+서브에이전트 정의가 외부 패키지(agency-agents) 카탈로그 압축본에 의존하던 구조에서, **kkirikkiri 자체의 archetype 마스터 + 동적 합성 가이드**를 핵심 자산으로 삼는 구조로 전환. 카드는 30~50줄 압축본이 아니라 **archetype 본문 + 도메인 살 4종**으로 100~150줄 농밀하게 합성됨. 어떤 도메인 요청이 와도 LLM이 즉석 합성 가능.
+
+- **archetype 5종 → 7종 확장** (`team-prompts.md`):
+  - 신규: **Writer** (Audience-First, 전달 검증) / **Designer** (Usability + Aesthetic-First, 사용성 검증)
+  - 기존 5종 모두 농밀화 — 도메인 적응 가이드 / 실제 발언 예시 / 결과물 형식 / 실수치 KPI 추가
+  - 각 archetype 100~120줄, 전체 약 530줄
+  - 기존 "Builder가 코드/문서/디자인/마케팅을 다 흡수"하던 행동 원칙 충돌 해소
+
+- **`agency-agents-catalog.md` → `subagent-synthesis.md` 리네임 + 재구성**:
+  - 외부 패키지 카탈로그 압축본 10개 + 3-tier fetch 로직(설치→GitHub→동적생성)이 메인이던 구조를 폐기
+  - 새 구조: 합성 5단계 (역할 분해 → archetype 매칭 → 도메인 살 채집 → 카드 합성 → 스폰) + few-shot 예시 + 외부 자원 부록
+  - 도메인 살 4종 명문화: 정체성 / 스택·메서드 / 실패 패턴 / KPI 실수치 (모두 generic 회피·실수치·구체 안티패턴)
+  - 흔한 archetype 오매칭 표 (기술문서 → Builder❌ Writer✅ 등)
+  - few-shot 예시 2종 (Solidity 감사자 110줄 전체 / TikTok 전략가 요약)
+
+- **카드 포맷 변경** (`SKILL.md` Step 6-2.5):
+  - 옛 압축 포맷(30~50줄, 정체성·핵심미션·절대규칙·성공기준만) → 새 농밀 포맷(100~150줄, archetype + 도메인 살 4종)
+  - frontmatter `source: tier1-* | tier2-github | tier3-generated` → `archetype: [7종 중 1]` + `domain:` 필드
+  - 압축 기준 표 → 농밀 기준 표로 뒤집기 (코드 예시 / 도메인 스택 / 실패 패턴 / 소통 예시 모두 "포함" 칼럼)
+
+- **`SKILL.md` Step 4 — 3-tier 선택 로직 폐기**:
+  - "Tier 1 설치 → Tier 2 GitHub fetch → Tier 3 동적 생성" 우선순위 제거
+  - 새 절차: archetype 매칭 (검증 방식 시그널 → 7종 중 1) → 도메인 살 4종 채집 (LLM 자체 지식 우선) → 카드 합성
+  - agency-agents 외부 자원은 **부록 시나리오 A/B**로 후퇴 (사용자 환경에 설치되어 있고 카탈로그와 정확히 매칭될 때만 보조 활용)
+  - 한 팀원에게 두 archetype 강제 금지 (분리해서 다른 팀원으로 스폰)
+
+- **`SKILL.md` Step 6-4 — 스폰 프롬프트 패턴 단일화**:
+  - 옛 패턴: Tier 1은 외부 에이전트 직접, Tier 2/3은 카드 Read 지시
+  - 새 패턴: 모든 팀원이 archetype 본문(team-prompts.md) + 도메인 카드 두 파일 Read
+  - 토큰 효율: archetype 본문은 한 곳, 여러 팀원이 공유
+
+- **체크리스트 업데이트** (`절대 하지 마` / `항상 해`):
+  - "압축 포맷 사용" → "archetype + 4종 살 100~150줄"
+  - "확신 80% 미만 GitHub fetch 금지" → "LLM 자체 지식으로 합성 가능한데 외부 fetch부터 하지 마"
+  - 신규: "도메인 살 4종 중 하나라도 빠뜨리면 일반론으로 빠짐"
+  - 신규: "한 팀원에게 두 archetype 강제 금지"
+
+### 참고
+- 분석 기반: `handoff-kkirikkiri-subagent-analysis-20260510.md` (사용자 핸드오프 문서)
+- agency-agents 카탈로그(60+개 외부 도메인 정의)는 **부록**으로 보존 — 사용자 환경에 설치된 경우의 보조 활용 경로 유지
+
 ## [0.15.2] - 2026-05-05
 
 ### Fixed — AskUserQuestion 응답 후 멈춤 회귀 (v0.15.1 핫픽스)

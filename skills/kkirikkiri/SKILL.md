@@ -32,9 +32,10 @@ description: Auto-assembles and runs an AI agent team from one natural-language 
 | Step 진입 | Read 대상 |
 |----------|-----------|
 | Step 3 진입 | `interview-guide.md` + `metaphor-guide.md` |
-| Step 4 진입 | `agency-agents-catalog.md` (Tier 2 진입 시 agency-agents README 추가 fetch) |
+| Step 4 진입 | `subagent-synthesis.md` (동적 합성 가이드) + `team-prompts.md` (archetype 7종 마스터) |
 | Step 6-2 진입 | `shared-memory.md` |
-| Step 6-4 진입 | `team-prompts.md` |
+| Step 6-2.5 진입 | `subagent-synthesis.md` (이미 Step 4에서 로드됨, 재참조 시 캐시) |
+| Step 6-4 진입 | `team-prompts.md` (이미 Step 4에서 로드됨) |
 | Step 7-6 진입 | `validation-guide.md` |
 | Step 8-2 직후 | `output-guide.md` |
 
@@ -316,14 +317,16 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ---
 
-## Step 4: 동적 팀 구성
+## Step 4: 동적 팀 구성 (archetype 매칭 + 동적 합성)
 
-> **🚨 EXECUTE NOW — Step 4 진입 즉시 실행:**
+> **🚨 EXECUTE NOW — Step 4 진입 즉시 실행 (2개 파일 병렬 Read):**
 > ```
-> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/agency-agents-catalog.md")
+> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/subagent-synthesis.md")
+> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/team-prompts.md")
 > ```
-> 10개 에이전트 패턴, 3-tier 선택 로직(설치→GitHub→동적생성), 프리셋별 매핑 테이블이 여기 있다.
-> 이 Read 호출 없이 팀원 역할을 결정하지 말 것. Step 6 역할 파일 생성 시에도 이 파일 기준 밀도 사용.
+> - `subagent-synthesis.md`: 동적 합성 5단계 절차 + archetype 매칭 규칙 + 도메인 살 4종 채집 가이드 + few-shot 예시
+> - `team-prompts.md`: archetype 7종 마스터 템플릿 (Researcher / Analyst / Builder / Writer / Designer / Critic / Leader)
+> 두 파일 모두 Read 없이 팀원 역할을 결정하지 말 것. Step 6-2.5 카드 합성에서도 이 두 파일 기준.
 
 인터뷰 답변 + 환경 스캔 결과를 종합하여 최종 팀을 구성한다.
 
@@ -332,50 +335,60 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 1. **프리셋 기본 구성**에서 시작 (presets.md 참조)
 2. **인터뷰 답변으로 조정**:
    - 리서치 Q3 "깊고 포괄적" → 확장 구성 (4-5명)
-   - 개발 Q3 "테스트도 같이" → Tester 추가
-   - 분석 Q2에서 여러 관점 선택 → Explorer 역할 세분화
+   - 개발 Q3 "테스트도 같이" → Tester(Critic) 추가
+   - 분석 Q2에서 여러 관점 선택 → Researcher/Analyst 역할 세분화
 3. **환경 스캔으로 조정**:
-   - Codex CLI 있음 → 코드 리뷰/분석 역할에 외부 CLI 배정
-   - Gemini CLI 있음 → 디자인/대규모 분석에 외부 CLI 배정
-   - Perplexity MCP 있음 → 리서치 팀원에게 도구로 배정
-   - gh CLI 있음 → 개발 팀에 PR 관리 가능 알림
+   - Codex CLI 있음 → 코드 검증(Critic) 역할에 외부 CLI 배정
+   - Gemini CLI 있음 → 디자인(Designer)/대규모 분석(Analyst)에 외부 CLI 배정
+   - Perplexity MCP 있음 → Researcher 팀원에게 도구로 배정
+   - gh CLI 있음 → Builder 팀원에게 PR 관리 가능 알림
 
-### 에이전트 선택 3단계 (토큰 효율 순)
+### 팀원 합성 절차 (subagent-synthesis.md 5단계)
 
-각 팀원의 역할이 결정되면 아래 순서로 에이전트를 선택한다. **agency-agents-catalog.md의 프리셋별 매핑 테이블 참조.**
+각 팀원의 역할이 결정되면 아래 순서로 합성한다.
 
-**Tier 1 — 설치된 agency-agents 직접 사용 (토큰 0)**
-```
-agency_agents_installed = true 이면:
-  카탈로그 매핑에서 후보 에이전트명 확인 (예: engineering-rapid-prototyper)
-  ls ~/.claude/agents/{에이전트명}.md 존재 확인
-  존재하면 → subagent_type: "{에이전트명}", prompt에는 컨텍스트만 추가
-  없으면 → Tier 2로
-```
+**[Step 4-A] 역할 분해**
+사용자 인터뷰 답변과 환경 스캔에서 추출:
+- 역할명 (예: "Solidity 감사자", "TikTok 마케터")
+- 도메인 (예: "스마트 컨트랙트 보안")
+- 검증 방식 (실행 / 출처 / 사용성 / 반박 / 데이터 / 전달 / 조율)
+- 출력 형태 (코드 / 리포트 / 문서 / 디자인 / 검증 보고)
 
-**Tier 2 — README 인덱스 기반 온디맨드 페치**
-```
-조건: 역할이 구체적이고 전문 도메인이 명확할 때 (확신 80% 이상)
-  → agency-agents-catalog.md의 Tier 2 절차 참조
-     (README fetch → When to Use 매칭 → 개별 파일 fetch → 캐시)
+**[Step 4-B] archetype 매칭 (7종 중 1개)**
 
-캐시 확인 먼저: {KKIRIKKIRI_DIR}/agent-cache/{filename}.md 존재하면 fetch 없이 즉시 사용
-캐시 없으면: README fetch → 매칭 → 개별 파일 fetch → 캐시에 Write
+| 검증 방식 시그널 | archetype |
+|-----------------|-----------|
+| "동작하나?" / 코드·시스템 산출 | **Builder** |
+| "전달되나?" / 텍스트·청중 의식 | **Writer** |
+| "쓸 수 있나?" / 시각·UX | **Designer** |
+| "출처 있나?" / 외부 정보 수집 | **Researcher** |
+| "패턴 있나?" / 분류·통계·구조 | **Analyst** |
+| "반박 가능한가?" / 검증·감사 | **Critic** |
+| "조율" / 직접 실행 X | **Leader** |
 
-✅ 페치 예: "Godot 멀티플레이어", "Solidity 감사자", "리액트 UI 구현"
-❌ Tier 3으로: "개발자", "리서처", "분석가" (너무 일반적, When to Use 명확히 매핑 불가)
+규칙:
+- 한 사람에게 두 archetype 강제 금지 (분리해서 다른 팀원으로 스폰)
+- 매칭 모호 → Researcher 기본값
+- 팀에는 Critic 1명 + Leader 1명 기본 권장 (외부 검증 + 조율)
+- 흔한 오매칭은 `subagent-synthesis.md` "흔한 오매칭 주의" 표 참조
 
-  → 확신 80% 미만이면 즉시 Tier 3 (fetch 비용 > 생성 비용)
-  subagent_type: "general-purpose"
-```
+**[Step 4-C] 도메인 살 채집** (Step 6-2.5에서 카드 합성에 사용)
+- 살 1: 도메인 정체성 (본질 + 성격 형용사 3-4 + 경험)
+- 살 2: 도메인 스택 / 메서드 (표 5-8행)
+- 살 3: 도메인 실패 패턴 (4-6개 안티패턴)
+- 살 4: 도메인 KPI 실수치 (3-5개, 추상 표현 금지)
 
-**Tier 3 — 내제화 카탈로그 기반 동적 생성 (기본값)**
-```
-조건: Tier 1/2 해당 없거나 일반적인 역할
-  agency-agents-catalog.md의 10개 패턴 중 가장 유사한 것 참고
-  패턴 구조 (정체성→핵심미션→절대규칙→성공기준→소통방식) 따라 프롬프트 생성
-  subagent_type: "general-purpose"
-```
+채집 방법 (우선순위):
+1. LLM 자체 지식으로 즉석 합성
+2. 부족하면 심부름꾼에게 1회 fetch 위임
+3. agency-agents 외부 자원 — 사용자 환경에 설치되어 있을 때만 보조 활용 (`subagent-synthesis.md` 부록 참조)
+
+### subagent_type 결정
+
+- **기본값**: `subagent_type: "general-purpose"` (동적 합성 카드를 Read로 로드)
+- **외부 자원 보조 활용**:
+  - 사용자 환경에 agency-agents 설치됨 (`vibe:` 필드 감지) AND 역할이 카탈로그와 정확히 매칭됨 → `subagent_type: "{외부-에이전트명}"` 사용 가능
+  - 그 외 모든 경우 → `general-purpose` + 동적 합성 카드
 
 ### 모델 배정 규칙 (절대 준수)
 
@@ -617,55 +630,74 @@ team_name 예시: `kkirikkiri-research-20260503-1430-a3f2`
 > 세션 격리 모델, TEAM_PLAN/PROGRESS/FINDINGS 파일 템플릿, 공유 메모리 규칙이 모두 여기 있다.
 > 이 파일을 읽지 않고 공유 메모리를 초기화하지 말 것.
 
-### 6-2.5. 에이전트 정의 문서 생성
+### 6-2.5. 도메인 카드 합성 (archetype + 4종 살)
 
-팀원 스폰 전에 각 팀원의 역할 정의를 `{KKIRIKKIRI_DIR}/agents/`에 파일로 저장한다.
+팀원 스폰 전에 각 팀원의 **도메인 카드**를 `{KKIRIKKIRI_DIR}/agents/{역할명}.md`에 합성 저장한다.
 
 **왜 필요한가:**
-- 팀원이 기억을 잃었을 때 파일 읽으면 역할 즉시 복구
-- 팀 해산 후 재구성 시 동일한 역할 파일 재사용
-- 팀장이 팀원에게 "당신 역할 파일 읽어" 지시 가능
-- 교체 팀원이 전임자 역할을 파악하는 온보딩 문서
+- archetype 본문(team-prompts.md)은 모든 팀원이 공유하는 행동 원칙. 도메인 카드는 그 사람만의 도메인 디테일
+- 팀원이 컨텍스트 흐려지면 archetype + 카드 두 파일 다시 읽으면 역할 복구
+- 토큰 절약: 카드는 한 번 작성, 스폰 프롬프트에는 경로만 — 매번 카드 전체를 프롬프트에 싣지 않음
 
 디렉토리는 Step 6-1에서 이미 생성됨 (`mkdir -p {KKIRIKKIRI_DIR}/agents`).
 
-각 팀원마다 아래 **압축 포맷**으로 Write (전체 프롬프트 복사 금지):
+**합성 절차** (상세는 `subagent-synthesis.md`의 [3] [4] 단계 참조):
+
+Step 4-C에서 채집한 도메인 살 4종을 archetype 매칭 결과와 결합하여 카드 작성.
 
 ```
 파일 경로: {KKIRIKKIRI_DIR}/agents/{역할명}.md
-목표 크기: 30-50줄 이내 (코드 예시, 긴 설명 제외)
+목표 크기: 100~150줄 (도메인 깊이에 따라 조정)
 ```
 
 ```markdown
 ---
 name: [역할명]
-role: [프리셋]-[역할 유형]
+archetype: [Researcher / Analyst / Builder / Writer / Designer / Critic / Leader]
+domain: [도메인 한 줄]
 team: [team_name]
-model: [opus/sonnet]
-source: [tier1-{subagent_type} | tier2-github | tier3-generated]
+model: [opus / sonnet]
 created: [timestamp]
 ---
 
 # [역할명]
 
-## 정체성
-- **역할**: [한줄 전문성 정의]
-- **성격**: [3-4개 형용사]
-- **경험**: [도메인 + 성공/실패 패턴 한줄]
+## 정체성 (도메인 살 1)
+- 본질: [한 줄 — 이 도메인 종사자의 행동을 결정하는 신념]
+- 성격: [형용사 3-4개, generic 회피]
+- 경험: [성공/실패 패턴 한 줄]
 
-## 핵심 미션
-- [핵심 업무 1]
-- [핵심 업무 2]
-- [핵심 업무 3]
+## 행동 원칙 (archetype 본문 인용)
+> archetype: [archetype 이름]
+> 핵심: [Evidence-First / Quality-First / Audience-First / Usability-First / Data-First / Red-team / Coordinate-Only 중 1]
+> 검증 방식: [한 줄 요약]
 
-## 절대 규칙
-- [가장 중요한 제약 1]
-- [가장 중요한 제약 2]
-- 절대 [금지 사항]
+→ 상세 행동 원칙은 team-prompts.md "# [archetype 이름]" 섹션 참조
 
-## 성공 기준
-- [측정 가능한 지표 1]
-- [측정 가능한 지표 2]
+## 도메인 R&R
+[구체적 작업 범위 5-7행]
+
+## 도메인 스택 / 메서드 (도메인 살 2)
+| 상황 | 도구·메서드 | 이유 |
+|------|------------|------|
+| ... | ... | ... |
+[표 5-8행]
+
+## 도메인 실패 패턴 (도메인 살 3)
+- [안티패턴 1]: [결과]
+- [안티패턴 2]: [결과]
+[4-6개]
+
+## 도메인 KPI (도메인 살 4)
+- [실수치 1, 예: "Lighthouse 90+"]
+- [실수치 2, 예: "Day 7 retention 40%"]
+[3-5개, 추상 표현 금지]
+
+## 소통 스타일 (실제 발언 예시)
+- [archetype 본문 패턴 + 도메인 어휘로 4개]
+
+## 결과물 형식
+[archetype 본문 형식 + 도메인 적응]
 
 ## 공유 메모리
 - 계획: {KKIRIKKIRI_DIR}/TEAM_PLAN.md
@@ -673,32 +705,41 @@ created: [timestamp]
 - 발견: {KKIRIKKIRI_DIR}/TEAM_FINDINGS.md
 ```
 
-**압축 기준 (중간 밀도 — 역할 수행 가능 + 토큰 절약):**
+**농밀 기준 (역할 수행 가능 + 도메인 깊이):**
 
-| 포함 | 제외 |
-|------|------|
-| 정체성 (역할·성격·경험) 3-4줄 | 코드 예시 |
-| 핵심 미션 불릿 5-7개 | 단계별 워크플로우 설명 |
-| 절대 규칙 3-5개 | 소통 스타일 예시 문장 |
-| 성공 기준 3-4개 | 기술 스택 세부 설명 |
-| 공유 메모리 경로 | 도구 사용법 상세 |
+| 반드시 포함 | 가이드 |
+|-----------|--------|
+| 정체성 4종 (본질·성격·경험·archetype) | generic 형용사 회피 |
+| 도메인 스택/메서드 표 5-8행 | "이유" 칼럼 필수 |
+| 도메인 실패 패턴 4-6개 | 결과까지 명시 |
+| 도메인 KPI 실수치 3-5개 | 숫자 또는 명시적 문턱 |
+| 소통 스타일 발언 예시 4개 | archetype 본문 인용 + 도메인 어휘 |
 
-목표: 에이전트가 파일 읽고 즉시 역할 수행 가능한 최소 정보.
-agency-agents-catalog.md의 10개 압축 포맷이 기준 밀도.
+| 길이 가이드 | 목표 |
+|-----------|------|
+| 일반적 도메인 (개발자, 리서처) | 100~120줄 |
+| 전문 도메인 (Solidity, 임베디드) | 130~150줄 |
+| 단순 보조 (포맷팅) | 80~100줄 |
 
-**팀원 스폰 시 프롬프트에 자신의 파일 경로 포함:**
+→ few-shot 예시(Solidity 감사자 전체 합성, TikTok 전략가 요약)는 `subagent-synthesis.md` 참조.
+
+**팀원 스폰 시 프롬프트는 archetype 본문 + 카드 경로 둘 다 포함** (Step 6-4 참조):
 ```
-## 내 역할 정의 파일
-{KKIRIKKIRI_DIR}/agents/{역할명}.md
-컨텍스트가 흐릿해지면 이 파일을 Read로 다시 읽어 역할을 복구하세요.
+## 1. 마스터 행동 원칙
+Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/team-prompts.md") 의
+"# [archetype 이름]" 섹션을 읽고 행동 원칙을 내재화하세요.
+
+## 2. 당신의 도메인 카드
+Read("{KKIRIKKIRI_DIR}/agents/{역할명}.md") 로
+도메인 정체성·스택·실패 패턴·KPI를 확인하세요.
 ```
 
-**팀장 프롬프트에 전체 팀원 파일 인덱스 포함:**
+**팀장 프롬프트에 전체 팀원 카드 인덱스 포함:**
 ```
-## 팀원 역할 파일 인덱스
-- {KKIRIKKIRI_DIR}/agents/[팀원1].md — [역할 한줄 설명]
-- {KKIRIKKIRI_DIR}/agents/[팀원2].md — [역할 한줄 설명]
-팀원이 역할을 혼동하면 해당 파일을 읽도록 지시하세요.
+## 팀원 도메인 카드 인덱스
+- {KKIRIKKIRI_DIR}/agents/[팀원1].md — [archetype + 도메인 한 줄]
+- {KKIRIKKIRI_DIR}/agents/[팀원2].md — [archetype + 도메인 한 줄]
+팀원이 역할을 혼동하면 해당 카드 + team-prompts.md의 해당 archetype 섹션을 읽도록 지시하세요.
 ```
 
 **아카이빙 규칙:**
@@ -726,36 +767,56 @@ TaskCreate({
 
 ### 6-4. Claude 팀원 스폰
 
-각 팀원을 Task 도구로 스폰한다. **Step 4의 3-tier 선택 결과에 따라 subagent_type 결정:**
+각 팀원을 Task 도구로 스폰한다. **subagent_type은 Step 4의 결정 결과에 따라:**
 
 ```
-// Tier 1: agency-agents 설치된 경우 → 전문 에이전트 직접 사용
-Task({
-  team_name: "{team_name}",
-  name: "[팀원-이름]",
-  subagent_type: "engineering-rapid-prototyper",  // 실제 설치된 파일명
-  model: "opus",
-  prompt: "[팀 컨텍스트 + 공유 메모리 경로 + 에이전트 파일 경로만 추가]"
-})
-
-// Tier 2/3: 미설치 or 동적 생성 → general-purpose + 압축 프롬프트
+// 기본: 동적 합성 카드 사용
 Task({
   team_name: "{team_name}",
   name: "[팀원-이름]",
   subagent_type: "general-purpose",
   model: "opus",
-  prompt: "[6-2.5에서 생성한 {KKIRIKKIRI_DIR}/agents/{역할명}.md 읽기 지시 + 추가 컨텍스트]"
+  prompt: `
+당신은 [역할명]입니다. ([archetype] archetype + [도메인])
+
+## 1. 마스터 행동 원칙 (반드시 먼저 읽기)
+Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/team-prompts.md") 의
+"# [archetype 이름]" 섹션을 읽고 행동 원칙을 내재화하세요.
+
+## 2. 당신의 도메인 카드
+Read("{KKIRIKKIRI_DIR}/agents/{역할명}.md") 로
+도메인 정체성·스택·실패 패턴·KPI를 확인하세요.
+
+## 3. 첫 태스크
+[구체적 지시]
+
+## 4. 공유 메모리
+- {KKIRIKKIRI_DIR}/TEAM_PLAN.md
+- {KKIRIKKIRI_DIR}/TEAM_PROGRESS.md
+- {KKIRIKKIRI_DIR}/TEAM_FINDINGS.md
+
+## 5. 팀 정보
+- 팀 이름: {team_name}
+- 팀장: [leader-name]
+- 다른 팀원: [목록]
+`
+})
+
+// 외부 자원 보조 활용: agency-agents 설치 + 카탈로그 정확 매칭 시
+Task({
+  team_name: "{team_name}",
+  name: "[팀원-이름]",
+  subagent_type: "engineering-rapid-prototyper",  // 실제 설치된 파일명
+  model: "opus",
+  prompt: "[외부 에이전트 정의는 그대로 활용 + 도메인 카드 추가 + 공유 메모리 경로]"
 })
 ```
 
-**Tier 2/3 프롬프트 핵심 패턴 (토큰 절약):**
-역할 정의를 프롬프트에 직접 쓰지 않고 파일 읽기로 대체:
-```
-당신의 역할 정의가 파일에 저장되어 있습니다.
-먼저 Read("{KKIRIKKIRI_DIR}/agents/{역할명}.md")로 읽고 역할을 파악하세요.
-그 다음 아래 지시를 따르세요:
-[태스크 지시]
-```
+**핵심 패턴 (토큰 절약 + 깊이 동시 확보):**
+- archetype 본문은 한 곳(team-prompts.md)에만, 여러 팀원이 공유
+- 도메인 카드는 팀원별 1개 (`{KKIRIKKIRI_DIR}/agents/{역할명}.md`)
+- 스폰 프롬프트에는 **두 파일 경로 + 첫 태스크**만 — 카드/archetype 본문 자체를 프롬프트에 싣지 않음
+- 컨텍스트 흐려지면 → archetype 파일 + 카드 파일 다시 Read
 
 ### 팀원/팀장 프롬프트 작성
 
@@ -1083,8 +1144,10 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 - [ ] 검증 없이 결과를 유저에게 전달하지 마 — 반드시 품질 판정 거쳐야
 - [ ] 4라운드 이상 반복하지 마 — 최대 3라운드 제한
 - [ ] 팀 재구성 시 공유 메모리 파일을 삭제하지 마 — 새 팀에 전달해야
-- [ ] 에이전트 정의 파일을 전체 프롬프트 그대로 복사하지 마 — 압축 포맷 사용
-- [ ] 확신 80% 미만인 역할에 GitHub fetch 하지 마 — Tier 3으로 바로 넘어갈 것
+- [ ] 도메인 카드를 archetype 본문 복붙으로 채우지 마 — archetype은 team-prompts.md에 한 곳, 카드는 도메인 살 4종만
+- [ ] 카드에 도메인 살 4종(정체성·스택·실패패턴·KPI 실수치) 중 하나라도 빠뜨리지 마 — 빠지면 일반론으로 빠짐
+- [ ] 한 팀원에게 두 archetype을 강제하지 마 — 분리해서 다른 팀원으로 스폰
+- [ ] LLM 자체 지식으로 합성 가능한데 외부 자원 fetch부터 하지 마 — fetch는 보조 자원
 
 ## 항상 해 (전체 워크플로우)
 
@@ -1097,12 +1160,14 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 - [ ] 프리셋 매칭 실패 시 범용 인터뷰로 전환
 - [ ] 결과 리포트에 팀 구성 + 작업 과정 + 산출물 포함
 - [ ] 팀 생성 직후 공유 메모리 3종 파일 초기화 (TEAM_PLAN, TEAM_PROGRESS, TEAM_FINDINGS)
-- [ ] 팀원 스폰 전 {KKIRIKKIRI_DIR}/agents/{역할명}.md 압축 정의 파일 생성
-- [ ] 팀원 프롬프트에 자신의 역할 파일 경로 포함 (컨텍스트 복구용)
-- [ ] 팀장 프롬프트에 전체 팀원 파일 인덱스 포함
+- [ ] 팀원 스폰 전 {KKIRIKKIRI_DIR}/agents/{역할명}.md 도메인 카드 합성 (archetype + 4종 살, 100~150줄)
+- [ ] 카드 frontmatter에 archetype 명시 (Researcher / Analyst / Builder / Writer / Designer / Critic / Leader)
+- [ ] 팀원 프롬프트에 archetype 본문(team-prompts.md) + 도메인 카드 두 파일 경로 모두 포함
+- [ ] 팀장 프롬프트에 전체 팀원 카드 인덱스 (archetype + 도메인 한 줄) 포함
 - [ ] 팀장 프롬프트에 공유 메모리 관리 의무 포함
 - [ ] 팀원 프롬프트에 공유 메모리 읽기/쓰기 + 심부름꾼 스폰 방법 포함
-- [ ] Step 4에서 3-tier 순서로 에이전트 선택 (설치 → GitHub 완전핏 → 내제화 생성)
+- [ ] Step 4에서 archetype 매칭 → 도메인 살 4종 채집 → 카드 합성 순서 준수
+- [ ] 검증 방식이 모호하면 Researcher 기본값 + 추가 인터뷰 질문 1개로 명확화
 - [ ] 1라운드 완료 후 반드시 품질 판정 수행 (목표 달성/완성도/정확성/일관성)
 - [ ] 품질 부족 시 유저에게 2라운드 진행 여부 확인
 - [ ] 팀 재구성 시 TEAM_FINDINGS.md 내용을 새 팀에 반드시 전달
