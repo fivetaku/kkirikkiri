@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.16.2] - 2026-05-19
+
+### Fixed — Step 5→6 경계 + Step 6-2 Action Vacuum 회귀 (v0.15.2 핫픽스 누락분)
+
+v0.15.2(2026-05-05) Council 핫픽스에서 "AskUserQuestion 응답 후 모델이 다음 도구 호출 없이 정지하는 회귀"를 Step 3/4/7-6/8-2에 적용했으나, **Step 5→6 경계와 Step 6 본문**에는 동일 패치가 누락되어 "팀 구성 확인 후 멈춤" 증상이 잔존했음. SKILL.md 3곳에 `🚨 EXECUTE NOW` 박스 추가로 도구 호출 앵커 복원.
+
+- **Step 5-2 응답 처리 직후 (`SKILL.md` line 533)** — "네, 시작해주세요" 응답 수신 시 즉시 Bash(team_name 생성) + Bash(mkdir) + TeamCreate를 호출하도록 명령형 트리거 박스 추가. 부정형 Continuation Contract("멈춤 금지")만으로는 다음 액션 샘플링 보장 불가하다는 v0.15.2 Council 합의 적용.
+- **Step 6 진입부 (`SKILL.md` line 547)** — 6-1 / 6-2 / 6-2.5 / 6-4의 코드 블록이 "예시"가 아닌 "실호출"임을 명시하는 진입 박스 추가. Step 단위 도구 호출 누락 방지.
+- **Step 6-2 MANDATORY READ 직후 (`SKILL.md` line 643)** — shared-memory.md Read 직후 즉시 TEAM_PLAN.md / TEAM_PROGRESS.md / TEAM_FINDINGS.md Write 호출 박스 추가. Read만 하고 공유 메모리 초기화 없이 Step 6-2.5로 점프하던 위험 차단.
+
+### Council 합의 적용 (v0.15.2)
+
+- 직접 원인: 단계 본문의 `EXECUTE/MANDATORY + 도구명 + 코드블록` 앵커가 상단 lazy-read 표보다 훨씬 강한 도구 호출 트리거임. v0.15.2 핫픽스 정신을 Step 5→6 / Step 6 본문에도 일관 적용.
+- 회귀 방지: 향후 토큰 절약 리팩토링 시 도구 호출 앵커는 줄이지 않는 원칙 재확인.
+
+### 검증
+
+- 패치 후 `🚨 EXECUTE NOW | 🚨 MANDATORY` 앵커가 SKILL.md 전체에서 워크플로우 흐름에 따라 일관 배치됨 (Step 3 / 4 / 5→6 / 6 / 6-2 / 6-4 / 7-6 / 8 / 8-3).
+- "AskUserQuestion 응답 → 다음 도구 호출 없는 정지" 시나리오 차단 검증.
+
 ## [0.16.1] - 2026-05-10
 
 ### Added — v0.16.0 검증 후속 보강 (3건)

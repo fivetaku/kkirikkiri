@@ -530,11 +530,21 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 - "조정하고 싶어요" → 어떤 부분을 바꿀지 추가 AskUserQuestion 호출 후 Step 4 재실행
 - "처음부터 다시" → Step 1로 복귀, presets 재매칭부터 시작
 
+> **🚨 EXECUTE NOW — "네, 시작해주세요" 응답을 받으면 텍스트만 출력하고 멈추지 말고 즉시 다음 도구를 순서대로 호출한다 (v0.15.2 Action Vacuum 회귀 방지):**
+> ```
+> Bash("RAND4=$(openssl rand -hex 2 2>/dev/null || printf '%04x' $((RANDOM % 65536))); echo kkirikkiri-{preset}-$(date +%Y%m%d-%H%M)-${RAND4}")
+> Bash("mkdir -p {KKIRIKKIRI_DIR}/{agents,prompts,agent-cache,archive} && mkdir -p {프로젝트루트}/.kkirikkiri/shared/saved-teams")
+> TeamCreate({ team_name: "{team_name}", description: "[팀 목표 요약]" })
+> ```
+> 이 박스가 Step 5→6 경계의 도구 호출 앵커다. AskUserQuestion 응답만 받고 다음 도구 호출 없이 멈추면 안 된다.
+
 ---
 
 ## Step 6: 팀 생성 + 공유 메모리 + 실행
 
 확인을 받으면 Claude Code Agent Teams를 사용하여 팀을 생성하고 실행한다.
+
+> **🚨 EXECUTE NOW — 이 Step에 진입했다는 것은 Step 5에서 "네, 시작해주세요" 확인을 받았다는 뜻이다. 아래 6-1 / 6-2 / 6-2.5 / 6-4의 코드 블록은 예시가 아니라 실제 도구 호출이다. 한 단계도 건너뛰지 말고 순차 실행하며, 각 도구 호출 완료를 확인한 후에만 다음 단계로 진행한다.**
 
 ### 6-1. 팀 생성
 
@@ -629,6 +639,14 @@ team_name 예시: `kkirikkiri-research-20260503-1430-a3f2`
 > ```
 > 세션 격리 모델, TEAM_PLAN/PROGRESS/FINDINGS 파일 템플릿, 공유 메모리 규칙이 모두 여기 있다.
 > 이 파일을 읽지 않고 공유 메모리를 초기화하지 말 것.
+
+> **🚨 EXECUTE NOW — shared-memory.md를 읽은 직후 즉시 3개 파일을 Write로 생성한다 (Read만 하고 Step 6-2.5로 점프 금지):**
+> ```
+> Write("{KKIRIKKIRI_DIR}/TEAM_PLAN.md", <shared-memory.md의 TEAM_PLAN 템플릿 적용 — 팀 목표, 팀원, 단계별 작업 분배>)
+> Write("{KKIRIKKIRI_DIR}/TEAM_PROGRESS.md", <shared-memory.md의 TEAM_PROGRESS 템플릿 적용 — 빈 진행 로그>)
+> Write("{KKIRIKKIRI_DIR}/TEAM_FINDINGS.md", <shared-memory.md의 TEAM_FINDINGS 템플릿 적용 — 빈 발견 사항>)
+> ```
+> 세 파일 모두 Write 완료를 확인한 후에만 Step 6-2.5로 진행. 공유 메모리 미초기화 상태에서 팀원을 스폰하면 컨텍스트 손실 시 복구 불가.
 
 ### 6-2.5. 도메인 카드 합성 (archetype + 4종 살)
 
