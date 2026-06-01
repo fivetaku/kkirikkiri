@@ -20,6 +20,10 @@ const SCRIPT_DIR = __dirname;
 const WORKER_PATH = path.join(SCRIPT_DIR, 'run-cli-worker.js');
 const JOBS_DIR_DEFAULT = path.join(SCRIPT_DIR, '..', '.jobs');
 
+// provider → 실제 실행 바이너리 이름. antigravity의 바이너리는 `agy`다.
+const PROVIDER_BINARIES = { codex: 'codex', gemini: 'gemini', antigravity: 'agy' };
+const SUPPORTED_PROVIDERS = Object.keys(PROVIDER_BINARIES);
+
 function killProcess(pid) {
   try {
     if (process.platform === 'win32') {
@@ -96,13 +100,13 @@ function printHelp() {
   process.stdout.write(`run-cli-job.js — 끼리끼리 외부 CLI 러너
 
 Usage:
-  run-cli.sh start --provider codex|gemini --prompt-file path [--timeout N] [--json]
+  run-cli.sh start --provider codex|gemini|antigravity --prompt-file path [--timeout N] [--json]
   run-cli.sh status [--text] <JOB_DIR>
   run-cli.sh wait [--timeout-ms N] [--interval-ms N] <JOB_DIR>
   run-cli.sh results [--json] <JOB_DIR>
   run-cli.sh stop <JOB_DIR>
   run-cli.sh clean <JOB_DIR>
-  run-cli.sh check codex|gemini
+  run-cli.sh check codex|gemini|antigravity
 `);
 }
 
@@ -123,10 +127,10 @@ function cmdStart(options) {
   const timeout = options.timeout ? Number(options.timeout) : 600;
   const jobsDir = options['jobs-dir'] || JOBS_DIR_DEFAULT;
 
-  if (!provider) exitWithError('start: missing --provider (codex or gemini)');
+  if (!provider) exitWithError('start: missing --provider (codex, gemini, or antigravity)');
   if (!promptFile) exitWithError('start: missing --prompt-file');
-  if (!['codex', 'gemini'].includes(provider)) {
-    exitWithError(`start: unsupported provider "${provider}" (use codex or gemini)`);
+  if (!SUPPORTED_PROVIDERS.includes(provider)) {
+    exitWithError(`start: unsupported provider "${provider}" (use ${SUPPORTED_PROVIDERS.join(', ')})`);
   }
   if (!fs.existsSync(promptFile)) {
     exitWithError(`start: prompt file not found: ${promptFile}`);
@@ -286,14 +290,15 @@ function cmdClean(_options, jobDir) {
 
 // ─── check ──────────────────────────────────────────────────────────
 function cmdCheck(provider) {
-  if (!provider) exitWithError('check: missing provider name (codex or gemini)');
-  if (!['codex', 'gemini'].includes(provider)) {
+  if (!provider) exitWithError(`check: missing provider name (${SUPPORTED_PROVIDERS.join(', ')})`);
+  const binary = PROVIDER_BINARIES[provider];
+  if (!binary) {
     exitWithError(`check: unsupported provider "${provider}"`);
   }
 
   try {
     const whichCmd = process.platform === 'win32' ? 'where' : 'which';
-    const result = execFileSync(whichCmd, [provider], { encoding: 'utf8', timeout: 5000 }).trim();
+    const result = execFileSync(whichCmd, [binary], { encoding: 'utf8', timeout: 5000 }).trim();
     const firstLine = result.split(/\r?\n/)[0]; // where returns multiple lines on Windows
     process.stdout.write(`${provider}: found at ${firstLine}\n`);
     process.exit(0);

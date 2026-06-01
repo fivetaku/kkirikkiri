@@ -75,9 +75,15 @@ else
 fi
 
 if command -v gemini &>/dev/null; then
-  pass "Gemini CLI 설치됨 — 대규모 분석 역할 활용 가능"
+  pass "Gemini CLI 설치됨 — 대규모 분석 역할 활용 가능 (※ 개인/Pro/Ultra는 2026-06-18 Antigravity CLI로 전환)"
 else
   warn "Gemini CLI 미설치 — npm i -g @google/gemini-cli (없어도 동작)"
+fi
+
+if command -v agy &>/dev/null; then
+  pass "Antigravity CLI(agy) 설치됨 — Gemini CLI 후계, 대규모 분석 역할 활용 가능"
+else
+  warn "Antigravity CLI(agy) 미설치 — curl -fsSL https://antigravity.google/cli/install.sh | bash (없어도 동작)"
 fi
 
 if command -v gh &>/dev/null; then

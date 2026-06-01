@@ -3,13 +3,13 @@
 # run-cli.sh — 끼리끼리 외부 CLI 러너 (council 패턴)
 #
 # Subcommands:
-#   run-cli.sh start --provider codex --prompt-file task.md    # returns JOB_DIR
+#   run-cli.sh start --provider codex|gemini|antigravity --prompt-file task.md  # returns JOB_DIR
 #   run-cli.sh status [--text] JOB_DIR                         # poll progress
 #   run-cli.sh wait JOB_DIR                                    # block until done
 #   run-cli.sh results [--json] JOB_DIR                        # print output
 #   run-cli.sh stop JOB_DIR                                    # kill running CLI
 #   run-cli.sh clean JOB_DIR                                   # remove job directory
-#   run-cli.sh check codex|gemini                              # check CLI installed
+#   run-cli.sh check codex|gemini|antigravity                  # check CLI installed (antigravity→agy)
 #
 
 set -e

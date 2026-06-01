@@ -164,7 +164,8 @@ Step 8 완료 시, 이 인덱스 + 팀 구성/환경/결과를 자연어로 요�
 ```bash
 # 1. 외부 AI CLI 확인
 command -v codex >/dev/null 2>&1 && codex --version
-command -v gemini >/dev/null 2>&1 && gemini --version
+command -v gemini >/dev/null 2>&1 && gemini --version   # 개인/Pro/Ultra는 2026-06-18 Antigravity로 전환
+command -v agy >/dev/null 2>&1 && agy --version          # Antigravity CLI (Gemini CLI 후계)
 
 # 2. 개발 도구 확인
 command -v gh >/dev/null 2>&1    # GitHub CLI
@@ -187,6 +188,7 @@ ls ~/.claude/agents/*.md 2>/dev/null | xargs grep -l "^vibe:" 2>/dev/null | wc -
 환경 정보:
 - codex_cli: true/false (경로, 버전)
 - gemini_cli: true/false (경로, 버전)
+- antigravity_cli: true/false (바이너리 `agy`, Gemini CLI 후계)
 - gh_cli: true/false
 - package_manager: npm/bun/pnpm
 - existing_agents: [파일 목록]
@@ -339,7 +341,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
    - 분석 Q2에서 여러 관점 선택 → Researcher/Analyst 역할 세분화
 3. **환경 스캔으로 조정**:
    - Codex CLI 있음 → 코드 검증(Critic) 역할에 외부 CLI 배정
-   - Gemini CLI 있음 → 디자인(Designer)/대규모 분석(Analyst)에 외부 CLI 배정
+   - Gemini CLI 또는 Antigravity CLI(`agy`) 있음 → 디자인(Designer)/대규모 분석(Analyst)에 외부 CLI 배정 (둘 다 있으면 agy 우선 — Gemini CLI 후계)
    - Perplexity MCP 있음 → Researcher 팀원에게 도구로 배정
    - gh CLI 있음 → Builder 팀원에게 PR 관리 가능 알림
 
@@ -399,7 +401,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 | 보조 작업자 | **Sonnet** | 최소한으로만 |
 | Haiku | **사용 금지** | 어떤 역할에도 배정하지 않음 |
 | 외부 분석 | **Codex CLI** | CLI 없으면 Opus로 폴백 |
-| 외부 디자인/분석 | **Gemini CLI** | CLI 없으면 Sonnet으로 폴백 |
+| 외부 디자인/분석 | **Gemini CLI / Antigravity CLI(agy)** | 둘 다 있으면 agy 우선. 없으면 Sonnet으로 폴백 |
 
 ### 팀장 R&R (절대 준수)
 
@@ -480,6 +482,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 | Sonnet | "전문 AI" 또는 "균형잡힌 AI" | 실행력 좋고 효율적 |
 | Codex CLI | "코드 전문 AI" | 코드 분석/리뷰 특화 |
 | Gemini CLI | "대규모 분석 AI" | 큰 파일/많은 문서 처리에 강함 |
+| Antigravity CLI(agy) | "대규모 분석 AI" | Gemini CLI 후계, 멀티 에이전트 |
 
 ### 제안 시 금지사항
 - 모델명(Opus, Sonnet) 노출 금지
@@ -855,9 +858,11 @@ Task({
 3. 핵심 역할이 빠지면 사용자에게 알리고 판단을 요청
 ```
 
-### 6-5. 외부 CLI 실행 (Codex/Gemini)
+### 6-5. 외부 CLI 실행 (Codex/Gemini/Antigravity)
 
-외부 CLI가 배정된 역할이 있으면, 팀장에게 다음 지시를 포함한다:
+외부 CLI가 배정된 역할이 있으면, 팀장에게 다음 지시를 포함한다.
+`--provider`는 `codex` | `gemini` | `antigravity` 중 환경 스캔에서 설치 확인된 것을 사용한다
+(antigravity의 실제 바이너리는 `agy`이며 Gemini CLI 후계다).
 
 ```
 ## 외부 AI 활용
@@ -870,6 +875,8 @@ Codex CLI로 [역할]을 수행합니다. 다음 절차를 따르세요:
    Bash(run_in_background=true):
    "bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-cli.sh start --provider codex --prompt-file {KKIRIKKIRI_DIR}/prompts/{task-id}.md"
    → 출력되는 JOB_DIR 경로를 저장
+   (Gemini CLI 후계인 Antigravity를 쓰려면 --provider antigravity. 단 agy 1.0.x는
+    비-TTY에서 stdout 출력이 비는 버그가 있어 results가 빈 경우 Claude 폴백 권장)
 
 3. 완료 대기:
    Bash: "bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-cli.sh wait JOB_DIR"

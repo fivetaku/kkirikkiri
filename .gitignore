@@ -6,3 +6,6 @@ __pycache__/
 # Plugin-specific
 .omc/
 .kkirikkiri/
+
+# runtime job artifacts
+.jobs/
