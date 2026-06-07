@@ -161,8 +161,8 @@ If a team member fails to join:
     }
   }
   ```
-- **tmux:** `brew install tmux` (macOS) / `apt install tmux` (Linux)
 - **Node.js** (for external CLI integrations)
+- **tmux** (optional): only for split-pane team display. Teams run in-process without it. `brew install tmux` (macOS) / `apt install tmux` (Linux)
 
 ### Optional (multi-model)
 

@@ -74,13 +74,12 @@ if (agentTeamsSet) {
   requiredOk = false;
 }
 
-// tmux
+// tmux (선택 — Agent Teams는 in-process로 동작, tmux는 split-pane 표시용)
 if (hasCommand('tmux')) {
   const ver = commandVersion('tmux', ['-V']);
-  pass(`tmux 설치됨 (${ver})`);
+  pass(`tmux 설치됨 (${ver}) — split-pane 표시 가능`);
 } else {
-  fail('tmux 미설치 — brew install tmux (macOS) / apt install tmux (Linux) / WSL required (Windows)');
-  requiredOk = false;
+  warn('tmux 미설치 — in-process로 정상 동작 (split-pane 표시만 비활성). 원하면 brew/apt install tmux');
 }
 
 // Node.js

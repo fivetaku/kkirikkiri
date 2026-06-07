@@ -161,8 +161,8 @@ Claude + Codex CLI + Gemini CLI가 하나의 팀에서 각각 다른 역할을 �
     }
   }
   ```
-- **tmux:** `brew install tmux` (macOS) / `apt install tmux` (Linux)
 - **Node.js** (외부 CLI 연동용)
+- **tmux** (선택): split-pane 팀 표시용. 없으면 in-process로 정상 동작. `brew install tmux` (macOS) / `apt install tmux` (Linux)
 
 ### 선택 (멀티 모델)
 
