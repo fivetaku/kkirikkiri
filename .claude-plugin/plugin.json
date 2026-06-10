@@ -1,7 +1,7 @@
 {
   "name": "kkirikkiri",
-  "version": "0.18.1",
-  "description": "Natural language team builder for Claude Code Agent Teams — create purpose-driven AI teams with a single sentence, with agent auto-detection and reuse across projects",
+  "version": "0.20.0",
+  "description": "Natural language team builder for Claude Code — one sentence becomes an AI team (Agent Teams) or a deterministic agent pipeline (Workflows). User picks the execution substrate; models are tiered (Opus lead/judge, Sonnet workers, cross-model review via Codex/agy)",
   "author": {
     "name": "fivetaku",
     "url": "https://github.com/fivetaku"

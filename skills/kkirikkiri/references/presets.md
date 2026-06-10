@@ -15,16 +15,15 @@
 | 역할 | 모델 | R&R | 절대 하면 안 되는 것 |
 |------|------|-----|-------------------|
 | Lead | Opus | 리서치 계획 수립, 소스 배분, 결과 통합/검증, 최종 리포트 감수 | 직접 검색하거나 문서 작성 |
-| Researcher 1 | Opus | 웹 리서치 (최신 뉴스, 블로그, 업계 리포트) | 리포트 작성, 다른 리서처 영역 침범 |
-| Researcher 2 | Opus | 문서/학술 리서치 (논문, 공식 문서, 기술 스펙) | 리포트 작성, 다른 리서처 영역 침범 |
+| Researcher 1 | Sonnet | 웹 리서치 (최신 뉴스, 블로그, 업계 리포트) | 리포트 작성, 다른 리서처 영역 침범 |
+| Researcher 2 | Sonnet | 문서/학술 리서치 (논문, 공식 문서, 기술 스펙) | 리포트 작성, 다른 리서처 영역 침범 |
 
 ### 확장 구성 (깊이 있게 요청 시)
-- Lead (Opus) + Researcher 1-3 (Opus) + Writer (Sonnet)
-- Writer는 리더의 지시에 따라 리포트 초안만 작성
+- Lead (Opus) + Researcher 1-3 (Sonnet) + Writer (Sonnet)
+- Writer는 리더의 지시에 따라 리포트 초안만 작성 (최종 감수는 Lead/Opus)
 
 ### 외부 모델 활용
-- Codex CLI 있으면: 기술 코드 분석 역할 추가
-- Gemini CLI 있으면: 대규모 문서 요약 역할 추가
+- Codex CLI 있으면: 기술 코드 분석 + 대규모 문서 분석 역할 추가
 - 없으면: Claude(Opus)로 해당 역할 대체
 
 ### 인터뷰 질문 (최대 3개)
@@ -73,16 +72,16 @@ recommended-for 필드가 "research"이면 무조건 매칭.
 |------|------|-----|-------------------|
 | Lead | Opus | 아키텍처 설계, 태스크 분배, 코드 리뷰, 통합 판단 | 직접 코드 작성 |
 | Developer 1 | Opus | 핵심 기능 구현 (메인 로직, API, 데이터 레이어) | 테스트 작성, UI 작업 |
-| Developer 2 | Opus | 보조 기능 구현 (UI, 유틸리티, 설정) | 메인 로직 변경, DB 스키마 변경 |
+| Developer 2 | Sonnet | 보조 기능 구현 (UI, 유틸리티, 설정) | 메인 로직 변경, DB 스키마 변경 |
 
 ### 확장 구성 (테스트 필요 시)
-- Lead (Opus) + Developer 1-2 (Opus) + Tester (Sonnet)
+- Lead (Opus) + Developer 1 (Opus) + Developer 2 (Sonnet) + Tester (Sonnet)
 - Tester는 리더 지시에 따라 테스트 코드만 작성
 
 ### 외부 모델 활용
-- Codex CLI 있으면: 코드 리뷰 전담 역할 추가 (백그라운드)
-- Gemini CLI 있으면: UI/디자인 리뷰 역할 추가 (백그라운드)
-- 없으면: Lead(Opus)가 리뷰 직접 수행
+- Codex CLI 있으면: 코드 리뷰 전담 역할 추가 (백그라운드, cross-model 1순위 검토자 — refute 프롬프트)
+- Antigravity CLI(agy) 있으면: UI/디자인 리뷰 역할 추가 (백그라운드)
+- 없으면: Opus 적대 검토 인스턴스("결함을 찾아라" 프롬프트)가 리뷰 수행
 
 ### 인터뷰 질문 (최대 3개)
 
@@ -184,7 +183,7 @@ recommended-for 필드가 "analysis"이면 무조건 매칭.
 | Reviewer | Sonnet | 맞춤법, 일관성, 정확성 검토. 수정 제안 | 직접 수정 (제안만) |
 
 ### 외부 모델 활용
-- Gemini CLI 있으면: 대량 텍스트 품질 검토 역할 (백그라운드)
+- Codex CLI 있으면: 대량 텍스트 품질 검토 역할 (백그라운드, cross-model 검토)
 - 없으면: Reviewer(Sonnet)가 검토 수행
 
 ### 인터뷰 질문 (최대 3개)
@@ -232,20 +231,19 @@ recommended-for 필드가 "content"이면 무조건 매칭.
 | 역할 | 모델 | R&R | 절대 하면 안 되는 것 |
 |------|------|-----|-------------------|
 | Lead | Opus | PM 프레임워크 기반 워크플로우 관리, 체크포인트에서 사용자 확인, 결과 통합/검증 | 직접 리서치, 직접 문서 작성 |
-| Researcher | Opus | 시장/경쟁/사용자 데이터 수집, 트렌드 분석, 정량 데이터 조사 | 결론 도출, 프레임워크 적용, 최종 문서 작성 |
+| Researcher | Sonnet | 시장/경쟁/사용자 데이터 수집, 트렌드 분석, 정량 데이터 조사 | 결론 도출, 프레임워크 적용, 최종 문서 작성 |
 | Strategist | Opus | 프레임워크 적용 (OST, Strategy Canvas, Lean Canvas, Assumption Mapping 등), 데이터 기반 분석 및 인사이트 도출 | 직접 리서치, 최종 문서 작성 |
 
 ### 확장 구성 (깊이 있게 요청 시 또는 복합 작업)
-- Lead (Opus) + Researcher (Opus) + Strategist (Opus) + Writer (Sonnet)
+- Lead (Opus) + Researcher (Sonnet) + Strategist (Opus) + Writer (Sonnet)
 - Writer는 팀장/Strategist의 지시에 따라 최종 문서(PRD, 전략 문서 등)만 작성
 
 ### 복합 작업 확장 (디스커버리+전략+PRD 등 3개 이상 작업 시)
-- Lead (Opus) + Researcher 1-2 (Opus) + Strategist (Opus) + Writer (Sonnet)
+- Lead (Opus) + Researcher 1-2 (Sonnet) + Strategist (Opus) + Writer (Sonnet)
 - Researcher 분업: 시장/경쟁 vs 사용자/데이터
 
 ### 외부 모델 활용
-- Codex CLI 있으면: 경쟁사 기술 분석, 코드 기반 feasibility 검증 역할 추가
-- Gemini CLI 있으면: 대규모 시장 데이터/보고서 요약 역할 추가
+- Codex CLI 있으면: 경쟁사 기술 분석, 코드 기반 feasibility 검증, 대규모 시장 데이터/보고서 분석 역할 추가
 - Perplexity MCP 있으면: Researcher에게 실시간 시장 데이터 검색 도구로 배정
 - 없으면: Claude(Opus)로 해당 역할 대체
 
@@ -359,10 +357,11 @@ Q2. "이 중에 가까운 게 있나요?" (header: "유형", multiSelect: false)
 
 ### 모델 배정 기본 원칙
 - Lead: 항상 Opus
-- 핵심 작업자: Opus 우선
-- 보조/단순 작업: Sonnet (최소한으로)
-- Haiku: 사용하지 않음
-- 외부(Codex/Gemini): CLI 백그라운드 실행, 없으면 Claude 폴백
+- 분석·비평·최종 종합·핵심 구현: Opus (판단이 걸린 역할 전부)
+- 일반 워커 (리서치 수집·쿼리·드래프트·간단 구현): Sonnet — **워커 기본값, 적극 활용**
+- 기계적 글루 (파일 수집·포맷·추출): Haiku 가능 (판단 0인 일만)
+- 외부(Codex=코드·대규모 분석 / agy=디자인·UI): CLI 백그라운드 실행, 없으면 Claude 폴백
+- 검토는 build와 다른 family: Codex → agy → Opus 적대 인스턴스(refute 프롬프트)
 
 ### 동적 조정 공통 원칙
 - 프리셋은 출발점, 고정값 아님

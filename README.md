@@ -47,8 +47,9 @@ Describe what you want in plain language. kkirikkiri interviews you with 2–3 q
 
 - **Natural language in, running team out** — no YAML, no agent definitions to write by hand
 - **Interview-driven** — 2–3 targeted questions replace a long configuration form
-- **Environment-aware** — detects installed tools (Codex CLI, Gemini CLI, `.claude/agents/`) and builds the best team from what you actually have
-- **Multi-model** — Claude, Codex CLI, and Gemini CLI can each take different roles in the same team
+- **Environment-aware** — detects installed tools (Codex CLI, Antigravity CLI `agy`, `.claude/agents/`) and builds the best team from what you actually have
+- **Multi-model** — Claude, Codex CLI (code & large-scale analysis), and Antigravity CLI (design/UI) can each take different roles in the same team
+- **Two execution substrates** — you pick: a live collaborating team (Agent Teams) or a deterministic agent pipeline (Workflows) for high-volume fan-out work
 - **Validation loop** — if round 1 output falls short, the team is automatically retried or rebuilt (up to 3 rounds)
 - **Shared memory** — `.kkirikkiri/teams/{team_name}/` files persist across rounds so a replacement team picks up context immediately; each session gets its own directory to prevent multi-session collisions
 - **Reusable agents** — save team members to `.claude/agents/` for use in future projects
@@ -117,7 +118,7 @@ Saved teams are stored cross-session under `.kkirikkiri/shared/saved-teams/`. If
 
 ### Multi-model support
 
-Claude + Codex CLI + Gemini CLI can each take different roles in the same team. kkirikkiri auto-detects what is installed and optimizes accordingly. Claude-only works fine if no external CLIs are present.
+Claude + Codex CLI (code & large-scale analysis, cross-model review) + Antigravity CLI `agy` (design/UI) can each take different roles in the same team. kkirikkiri auto-detects what is installed and optimizes accordingly. Claude-only works fine if no external CLIs are present.
 
 ### Agent auto-detection and reuse
 
@@ -167,8 +168,8 @@ If a team member fails to join:
 ### Optional (multi-model)
 
 ```bash
-npm install -g @openai/codex       # Codex CLI — code analysis and review
-npm install -g @google/gemini-cli  # Gemini CLI — design and large-scale analysis
+npm install -g @openai/codex                                    # Codex CLI — code & large-scale analysis, cross-model review
+curl -fsSL https://antigravity.google/cli/install.sh | bash     # Antigravity CLI (agy) — design/UI (replaces Gemini CLI)
 ```
 
 Works without these. Claude handles the full team on its own.
@@ -181,7 +182,7 @@ Works without these. Claude handles the full team on its own.
 | 4–5 members | 10–30 min | Medium |
 | 5+ members, multi-round | 30 min–1 hr | High |
 
-Reduce team size or use Codex/Gemini CLI to lower costs.
+Reduce team size or use Codex/Antigravity CLI to lower costs.
 
 ---
 

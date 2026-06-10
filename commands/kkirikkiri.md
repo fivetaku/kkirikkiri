@@ -17,6 +17,7 @@ allowed-tools:
   - TeamCreate
   - TeamDelete
   - SendMessage
+  - Workflow
   - WebSearch
   - WebFetch
 ---
@@ -82,4 +83,8 @@ Read the skill and reference files, then follow the workflow:
 3. Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/interview-guide.md`
 4. Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/metaphor-guide.md`
 5. If PM/product preset matched → also Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/pm-frameworks.md`
-6. Follow SKILL.md's 8-step workflow with user's request: `$ARGUMENTS`
+6. Follow SKILL.md's workflow with user's request: `$ARGUMENTS`
+   - Step 3.5에서 사용자가 실행 방식을 고른다: **작전 통제실(Agent Teams)** 또는 **공정 라인(Workflows)**
+   - 작전 통제실 → Step 4~8 (팀 구성·실행·Ralph 검증)
+   - 공정 라인 → Step 4-W/6-W/7-W/8-W (워크플로우 스크립트 구성·실행·내부 검증)
+   - Workflow 도구는 사용자가 "공정 라인"을 골랐을 때만 호출한다

@@ -32,12 +32,15 @@ description: Auto-assembles and runs an AI agent team from one natural-language 
 | Step 진입 | Read 대상 |
 |----------|-----------|
 | Step 3 진입 | `interview-guide.md` + `metaphor-guide.md` |
-| Step 4 진입 | `subagent-synthesis.md` (동적 합성 가이드) + `team-prompts.md` (archetype 7종 마스터) |
+| Step 4 진입 (작전 통제실 경로) | `subagent-synthesis.md` (동적 합성 가이드) + `team-prompts.md` (archetype 7종 마스터) |
+| Step 6 진입 (작전 통제실 경로) | `coordination-protocols.md` (적응형 척추 — Teams 경로 항상 적용) |
 | Step 6-2 진입 | `shared-memory.md` |
 | Step 6-2.5 진입 | `subagent-synthesis.md` (이미 Step 4에서 로드됨, 재참조 시 캐시) |
 | Step 6-4 진입 | `team-prompts.md` (이미 Step 4에서 로드됨) |
 | Step 7-6 진입 | `validation-guide.md` |
 | Step 8-2 직후 | `output-guide.md` |
+
+> 공정 라인(Workflows) 경로는 Step 4-W/6-W/7-W를 따른다 — 위 표의 Teams 전용 Read(coordination-protocols, shared-memory, team-prompts)는 불필요.
 
 > 위 표는 인덱스다. 실제 도구 호출은 각 Step 본문의 `🚨 EXECUTE NOW: Read(...)` 박스를 발견하면 즉시 실행한다. 박스를 건너뛰지 말 것.
 
@@ -55,21 +58,26 @@ KKIRIKKIRI_DIR={프로젝트루트}/.kkirikkiri/teams/{team_name}
 ## 워크플로우 개요
 
 ```
-Step 1: 의도 파악 + 프리셋 매칭
-Step 2: 환경 스캔 (백그라운드)
-Step 3: 인터뷰 (AskUserQuestion)
-Step 4: 동적 팀 구성
-Step 5: 팀 구성 제안 + 유저 확인
-Step 6: 팀 생성 + 공유 메모리 초기화 + 실행
-Step 7: 검증 루프 (품질이 충분할 때까지 반복)
-Step 8: 결과 수집 + 리포트
+Step 1:   의도 파악 + 프리셋 매칭
+Step 2:   환경 스캔 (백그라운드) — 실행 방식 가용성 포함
+Step 3:   인터뷰 (AskUserQuestion)
+Step 3.5: 실행 방식 선택 (AskUserQuestion) — 작전 통제실 vs 공정 라인
+   ├─ [작전 통제실 = Agent Teams]          ├─ [공정 라인 = Workflows]
+Step 4:   동적 팀 구성                      Step 4-W: 워크플로우 스크립트 구성
+Step 5:   팀 구성 제안 + 유저 확인          (확인은 Workflow 승인 카드가 대신)
+Step 6:   팀 생성 + 공유 메모리 + 실행      Step 6-W: Workflow 도구 호출
+Step 7:   검증 루프 (Ralph)                Step 7-W: 스크립트 내부 검증 스테이지
+Step 8:   결과 수집 + 리포트               Step 8-W: 반환값 리포트
 ```
+
+**substrate 분기 원칙**: Step 3.5에서 사용자가 고른 실행 방식에 따라 두 경로는 **Step 4부터 완전히 분기**한다. 작전 통제실 = 영속 팀 + 공유메모리 + Ralph 루프, 공정 라인 = 결정론 스크립트 + 스크립트 변수 + 내부 검증 스테이지.
 
 ### 핵심 운영 원칙
 
-**1. 기억 외부화**: 클로드의 기억력을 믿지 마. 중요한 결정은 반드시 파일에 기록.
+**1. 기억 외부화**: 클로드의 기억력을 믿지 마. 중요한 결정은 반드시 파일에 기록. (작전 통제실 경로 — 공정 라인은 스크립트 변수가 이 역할)
 **2. 심부름꾼 패턴**: 팀원은 필요하면 하위 에이전트를 스폰하여 병렬 작업 가능.
-**3. 검증 루프**: 1라운드 결과가 부족하면 팀을 재구성하여 2라운드 진행.
+**3. 검증 루프**: 작전 통제실은 Ralph 루프, 공정 라인은 스크립트 내부 adversarial-verify 스테이지.
+**4. build ≠ review family**: 만든 모델과 검토하는 모델은 다른 family가 기본 (Codex → agy → Opus 적대 인스턴스 폴백).
 
 ---
 
@@ -162,21 +170,24 @@ Step 8 완료 시, 이 인덱스 + 팀 구성/환경/결과를 자연어로 요�
 ### 스캔 항목
 
 ```bash
-# 1. 외부 AI CLI 확인
-command -v codex >/dev/null 2>&1 && codex --version
-command -v gemini >/dev/null 2>&1 && gemini --version   # 개인/Pro/Ultra는 2026-06-18 Antigravity로 전환
-command -v agy >/dev/null 2>&1 && agy --version          # Antigravity CLI (Gemini CLI 후계)
+# 1. 실행 방식 가용성 (Step 3.5 선택지 구성에 사용)
+claude --version 2>/dev/null                              # ≥ 2.1.154 이면 Workflows 가용으로 간주
+grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" ~/.claude/settings.json 2>/dev/null && echo "teams=on" || echo "teams=off"
 
-# 2. 개발 도구 확인
+# 2. 외부 AI CLI 확인
+command -v codex >/dev/null 2>&1 && codex --version       # 코드·대규모 분석 (생산 + 1순위 검토자)
+command -v agy >/dev/null 2>&1 && agy --version           # Antigravity CLI — 디자인/UI (Gemini CLI 대체본)
+
+# 3. 개발 도구 확인
 command -v gh >/dev/null 2>&1    # GitHub CLI
 command -v npm >/dev/null 2>&1   # npm
 command -v bun >/dev/null 2>&1   # bun
 command -v pnpm >/dev/null 2>&1  # pnpm
 
-# 3. 기존 에이전트 파일 확인
+# 4. 기존 에이전트 파일 확인
 ls ~/.claude/agents/*.md 2>/dev/null
 
-# 4. agency-agents 설치 확인 (vibe 필드 = agency-agents 포맷)
+# 5. agency-agents 설치 확인 (vibe 필드 = agency-agents 포맷)
 ls ~/.claude/agents/*.md 2>/dev/null | xargs grep -l "^vibe:" 2>/dev/null | wc -l
 ```
 
@@ -186,9 +197,10 @@ ls ~/.claude/agents/*.md 2>/dev/null | xargs grep -l "^vibe:" 2>/dev/null | wc -
 
 ```
 환경 정보:
-- codex_cli: true/false (경로, 버전)
-- gemini_cli: true/false (경로, 버전)
-- antigravity_cli: true/false (바이너리 `agy`, Gemini CLI 후계)
+- teams_enabled: true/false (EXPERIMENTAL_AGENT_TEAMS 설정 여부)
+- workflows_available: true/false (Claude Code 버전 ≥ 2.1.154)
+- codex_cli: true/false (경로, 버전) — 코드·대규모 분석
+- antigravity_cli: true/false (바이너리 `agy`, Gemini CLI 대체본) — 디자인/UI
 - gh_cli: true/false
 - package_manager: npm/bun/pnpm
 - existing_agents: [파일 목록]
@@ -305,9 +317,9 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
    ```
 
 3. **AskUserQuestion 응답 수신 후 — Continuation Contract:**
-   - 모든 질문 응답을 받으면 **즉시 Step 4로 진행한다**
+   - 모든 질문 응답을 받으면 **즉시 Step 3.5(실행 방식 선택)로 진행한다**
    - 응답을 텍스트로 요약만 하고 멈추는 것은 워크플로우 위반
-   - Step 4의 `EXECUTE NOW: Read(...)` 박스가 다음 액션이다 — 박스를 즉시 실행할 것
+   - Step 3.5의 AskUserQuestion(또는 가용성 단일 시 직행 분기)이 다음 액션이다 — 즉시 실행할 것
 
 4. **절대 금지**:
    - 4개 이상 질문 금지
@@ -319,7 +331,58 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ---
 
-## Step 4: 동적 팀 구성 (archetype 매칭 + 동적 합성)
+## Step 3.5: 실행 방식 선택 (substrate 분기)
+
+**원칙: 임의로 실행 방식을 정하지 않는다. 사용자가 AskUserQuestion으로 직접 고른다.**
+
+### 가용성 분기 (Step 2 스캔 결과 사용)
+
+| teams_enabled | workflows_available | 동작 |
+|:---:|:---:|---|
+| true | true | **AskUserQuestion 2지선다** (아래) |
+| true | false | 질문 생략 → 작전 통제실 직행 (Step 4) |
+| false | true | 질문 생략 → 공정 라인 직행 (Step 4-W) |
+| false | false | 실행 불가 — "둘 중 하나를 켜야 해요" 안내 후 종료 (check-env 안내 참조) |
+
+### 추천 휴리스틱 — "(추천)" 표시 결정
+
+| 신호 | 추천 |
+|---|---|
+| 수렴·관점충돌·설계결정·적대적 리뷰·트레이드오프 / "결정해줘"·"검토·비평해줘" / 프리셋 product·analysis | **작전 통제실** |
+| 독립·대량·결정론 / "전부·모든·N개" / 감사·마이그레이션·다수 소스 교차검증 / 프리셋 research·대규모 development | **공정 라인** |
+| 애매하면 | 작전 통제실 (소규모 안전 기본값). 단 명백히 대량이면 공정 라인 |
+
+### EXECUTE — AskUserQuestion 호출 (2지선다일 때)
+
+**EXECUTE:** 추천 옵션을 첫 번째에 배치하고 "(추천)"을 붙여 즉시 호출한다:
+
+```json
+{
+  "questions": [
+    {
+      "question": "이 작업을 어떤 방식으로 진행할까요?",
+      "header": "실행 방식",
+      "options": [
+        {"label": "작전 통제실 (실시간 협업)", "description": "AI 팀원들이 서로 의견을 주고받으며 토론하고 수렴해요. 설계 결정, 깊은 검토, 비평에 강해요."},
+        {"label": "공정 라인 (대량 자동 처리)", "description": "수십 개 작업을 자동으로 병렬 처리해요. 백그라운드로 돌고 재실행도 가능해요. 대량 리서치·감사·일괄 작업에 강해요."}
+      ],
+      "multiSelect": false
+    }
+  ]
+}
+```
+
+**응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
+- "작전 통제실" → 즉시 Step 4(동적 팀 구성)의 EXECUTE NOW Read 박스 실행
+- "공정 라인" → 즉시 Step 4-W(워크플로우 스크립트 구성)로 진행
+
+> ⚠️ Workflow 도구는 사용자가 "공정 라인"을 골랐을 때만 호출한다 (스킬 지시 = 유효 opt-in이지만, 사용자 선택 없이 임의 호출 금지).
+
+---
+
+## Step 4: 동적 팀 구성 (archetype 매칭 + 동적 합성) — 작전 통제실 경로
+
+> **이 Step은 작전 통제실(Teams) 경로 전용.** 공정 라인은 Step 4-W로.
 
 > **🚨 EXECUTE NOW — Step 4 진입 즉시 실행 (2개 파일 병렬 Read):**
 > ```
@@ -340,8 +403,8 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
    - 개발 Q3 "테스트도 같이" → Tester(Critic) 추가
    - 분석 Q2에서 여러 관점 선택 → Researcher/Analyst 역할 세분화
 3. **환경 스캔으로 조정**:
-   - Codex CLI 있음 → 코드 검증(Critic) 역할에 외부 CLI 배정
-   - Gemini CLI 또는 Antigravity CLI(`agy`) 있음 → 디자인(Designer)/대규모 분석(Analyst)에 외부 CLI 배정 (둘 다 있으면 agy 우선 — Gemini CLI 후계)
+   - Codex CLI 있음 → 코드·대규모 분석 생산 또는 검증(Critic) 역할에 배정 (cross-model 1순위 검토자)
+   - Antigravity CLI(`agy`) 있음 → 디자인/UI(Designer) 역할에 배정 (Gemini CLI 대체본)
    - Perplexity MCP 있음 → Researcher 팀원에게 도구로 배정
    - gh CLI 있음 → Builder 팀원에게 PR 관리 가능 알림
 
@@ -394,14 +457,24 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ### 모델 배정 규칙 (절대 준수)
 
+> 철학: 가격격차를 작업격차에 맞추고(`Haiku $1/$5 ─3배─ Sonnet $3/$15 ─1.67배─ Opus $5/$25`), **build와 review는 다른 family**.
+> Sonnet↔Opus는 1.67배뿐 — 품질이 중요하면 망설이지 말고 Opus.
+
 | 역할 | 모델 | 비고 |
 |------|------|------|
 | Lead (팀장) | **Opus** | 무조건. 예외 없음 |
-| 핵심 작업자 | **Opus** | 기본값 |
-| 보조 작업자 | **Sonnet** | 최소한으로만 |
-| Haiku | **사용 금지** | 어떤 역할에도 배정하지 않음 |
-| 외부 분석 | **Codex CLI** | CLI 없으면 Opus로 폴백 |
-| 외부 디자인/분석 | **Gemini CLI / Antigravity CLI(agy)** | 둘 다 있으면 agy 우선. 없으면 Sonnet으로 폴백 |
+| 분석·비평·최종 종합 / 핵심·고난도 구현 | **Opus** | 판단이 걸린 역할 전부 |
+| 일반 워커 (리서치 수집·쿼리·드래프트·간단 구현·표준 작업) | **Sonnet** | **워커 기본값 — 적극 활용** |
+| 기계적 글루 (파일 수집·포맷·추출·진행요약·더미데이터) | **Haiku** | 판단 0인 일만. 판단 필요한 순간 금지 |
+| 코드·대규모 분석 (생산 + 검토) | **Codex CLI** | 다른 base 모델. 없으면 Opus 폴백 |
+| 디자인/UI | **Antigravity CLI(`agy`)** | Gemini CLI 대체본. 없으면 Sonnet 폴백 |
+
+**검토자 폴백 체인 (build와 다른 family 원칙):**
+1. Codex 있음 → **Codex** (cross-model, 최선)
+2. 없고 agy 있음 → **agy**
+3. 둘 다 없음 → **Opus 적대 검토 인스턴스** — 별도 컨텍스트 + *"결함을 찾아라"*(refute) 프롬프트. "검토해줘"식 요청 금지 (rubber-stamp 방지)
+
+**모델 상속 금지:** 팀장·핵심은 `model: "opus"`, 워커는 `model: "sonnet"`을 스폰 시 **명시 핀**한다. 상속에 맡기지 않는다.
 
 ### 팀장 R&R (절대 준수)
 
@@ -413,7 +486,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ### CLI 없을 때 폴백
 
-외부 CLI(Codex/Gemini)가 없는 경우:
+외부 CLI(Codex/agy)가 없는 경우:
 
 1. 사용자에게 안내 (기술 용어 없이):
    ```
@@ -425,7 +498,59 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ---
 
-## Step 5: 팀 구성 제안 + 유저 확인
+## Step 4-W: 워크플로우 스크립트 구성 — 공정 라인 경로
+
+> **이 Step은 공정 라인(Workflows) 경로 전용.** 작전 통제실은 Step 4로.
+> 공유 메모리(6-2)·KKIRIKKIRI_DIR·도메인 카드 합성은 **생성하지 않는다** — 중간 결과는 스크립트 변수에 보관된다.
+
+오케스트레이터(이 스킬을 실행 중인 Claude)가 인터뷰 답변을 바탕으로 워크플로우 스크립트를 **인라인으로** 작성한다.
+
+### 스크립트 구성 규칙
+
+1. **`meta` 블록**: `name`(kebab-case), `description`(한 줄), `phases`(스테이지별 title) — 순수 리터럴로 작성.
+2. **스테이지 설계**: 기본 `pipeline()` (배리어는 전체 결과가 필요한 dedup/조기종료에만 `parallel()`).
+3. **모델 명시 — 세션 모델 상속에 맡기지 않는다:**
+   - 팬아웃 본체(수집·조사·드래프트) → `agent(prompt, {model: "sonnet"})`
+   - 기계적 서브스테이지(포맷·추출) → `{model: "haiku"}`
+   - 종합·판단·최종 합성 → `{model: "opus"}`
+4. **adversarial-verify 스테이지 필수 포함**: 팬아웃 결과를 종합하기 전, 독립 검증 에이전트가 *"이 발견을 반박하라(refute)"* 프롬프트로 교차 검증하는 스테이지를 넣는다. `schema` 옵션으로 구조화 반환을 강제한다.
+5. **구조화 출력**: 수집·검증 스테이지는 `{schema}`로 JSON 반환을 강제해 파싱 불확실성을 없앤다.
+
+### 스크립트 골격 예시
+
+```javascript
+export const meta = {
+  name: 'kkirikkiri-research',
+  description: '[목표 한 줄]',
+  phases: [
+    { title: '수집' },     // Sonnet 팬아웃
+    { title: '검증' },     // adversarial-verify (refute)
+    { title: '종합' },     // Opus
+  ],
+}
+phase('수집')
+const found = await parallel(SOURCES.map(s => () =>
+  agent(`[조사 지시] ${s}`, {model: 'sonnet', phase: '수집', schema: FINDING_SCHEMA})))
+phase('검증')
+const verified = await parallel(found.filter(Boolean).map(f => () =>
+  agent(`다음 발견을 반박하라(refute). 확신 없으면 refuted=true: ${JSON.stringify(f)}`,
+        {model: 'sonnet', phase: '검증', schema: VERDICT_SCHEMA})))
+phase('종합')
+return await agent(`검증 통과 결과만 종합 리포트로: ...`, {model: 'opus', phase: '종합'})
+```
+
+### Continuation
+
+스크립트 작성 완료 → **Step 5를 건너뛰고 즉시 Step 6-W로 진행** (Workflow 도구의 승인 카드가 사용자 확인 역할 — 이중 승인 방지). 사용자에게는 한 줄만 안내:
+```
+공정 라인을 구성했어요. 실행 승인 창이 뜨면 내용을 확인하고 시작해주세요.
+```
+
+---
+
+## Step 5: 팀 구성 제안 + 유저 확인 — 작전 통제실 경로
+
+> **이 Step은 작전 통제실(Teams) 경로 전용.** 공정 라인은 Step 5를 건너뛴다 (Workflow 승인 카드가 확인 역할).
 
 최종 팀 구성을 사용자에게 보여주고 확인을 받습니다.
 
@@ -479,10 +604,10 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 | 내부 모델명 | 유저에게 보여줄 표현 | 설명 |
 |------------|-------------------|------|
 | Opus | "가장 똑똑한 AI" | 복잡한 판단, 기획, 통합에 적합 |
-| Sonnet | "전문 AI" 또는 "균형잡힌 AI" | 실행력 좋고 효율적 |
-| Codex CLI | "코드 전문 AI" | 코드 분석/리뷰 특화 |
-| Gemini CLI | "대규모 분석 AI" | 큰 파일/많은 문서 처리에 강함 |
-| Antigravity CLI(agy) | "대규모 분석 AI" | Gemini CLI 후계, 멀티 에이전트 |
+| Sonnet | "전문 AI" 또는 "균형잡힌 AI" | 실행력 좋고 효율적 — 워커 기본 |
+| Haiku | "빠른 일꾼 AI" | 기계적 잡일 한정 (포맷·수집·추출) |
+| Codex CLI | "코드·대규모 분석 AI" | 코드 분석/리뷰 + 대규모 분석 특화 |
+| Antigravity CLI(agy) | "디자인 전문 AI" | 디자인/UI 특화 (Gemini CLI 대체본) |
 
 ### 제안 시 금지사항
 - 모델명(Opus, Sonnet) 노출 금지
@@ -543,22 +668,25 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 
 ---
 
-## Step 6: 팀 생성 + 공유 메모리 + 실행
+## Step 6: 팀 생성 + 공유 메모리 + 실행 — 작전 통제실 경로
+
+> **이 Step은 작전 통제실(Teams) 경로 전용.** 공정 라인은 Step 6-W로.
 
 확인을 받으면 Claude Code Agent Teams를 사용하여 팀을 생성하고 실행한다.
 
-### 6-0. 실행 모드 선택 (팬아웃 vs 능동)
+### 6-0. 적응형 척추 (항상 적용)
 
-팀을 만들기 전에 작업 성격으로 **실행 모드**를 정한다 (Step 5.5 라우터 결과 활용):
+작전 통제실은 **항상 능동 코디네이션(적응형 척추)으로 동작한다. 모드 선택은 없다** — 대량·독립·결정론 작업은 Step 3.5에서 이미 공정 라인으로 분기됐기 때문.
 
-| 모드 | 언제 | 팀장 행동 | 팀원 |
-|------|------|----------|------|
-| **팬아웃** (기본) | 독립 작업 N개를 나눠 처리 (소스 분담, 파일별 분석) | 배분 → 완료 대기 → 1회 통합 | blind 병렬, 1회 후 종료 |
-| **능동** | 관점 충돌·수렴 필요 / 발견 따라 방향이 바뀜 (설계결정, 적대적 리뷰, 모호한 트레이드오프) | **라운드 구동 + 중간 검토 + 교차 주입/재배분** | **영속**(수렴까지 생존), 서로 반응 |
+> **🚨 EXECUTE NOW — Step 6 진입 즉시 실행:**
+> ```
+> Read("${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/coordination-protocols.md")
+> ```
+> 적응형 척추(drive→inspect→re-inject) + 게이트(독립 의견 + 심판) 프로토콜이 여기 있다.
 
-- **능동 모드 선택 시 반드시** `references/coordination-protocols.md`를 읽고 팀장 프롬프트에 능동 구동 루프(drive→inspect→re-inject)를 주입한다. 6-4 스폰은 **영속**(수렴 전 shutdown 금지) + 매 라운드 보고 의무로 작성한다.
-- 팬아웃 모드는 아래 6-1~6-6을 그대로 따른다.
-- 비용 주의: 능동 모드는 토큰이 무겁다(N명 wake+읽기+응답/라운드). 소규모(N≤4)·고가치 전용. 대량·루틴은 팬아웃.
+- 팀장 프롬프트에 **능동 구동 루프(drive→inspect→re-inject)를 주입**한다. 팀장은 collect-at-end 금지 — 중간 산출을 읽고 그때그때 재지시/재배분/런타임 스폰.
+- 6-4 스폰은 **영속**(수렴 전 shutdown 금지) + 매 라운드 보고 의무로 작성한다.
+- 비용 주의: 능동 코디네이션은 토큰이 무겁다(N명 wake+읽기+응답/라운드). **소규모(N≤4) 권장.** 대량·루틴이 섞여 있으면 사용자에게 공정 라인 재안내를 고려.
 
 > **🚨 EXECUTE NOW — 이 Step에 진입했다는 것은 Step 5에서 "네, 시작해주세요" 확인을 받았다는 뜻이다. 아래 6-1 / 6-2 / 6-2.5 / 6-4의 코드 블록은 예시가 아니라 실제 도구 호출이다. 한 단계도 건너뛰지 말고 순차 실행하며, 각 도구 호출 완료를 확인한 후에만 다음 단계로 진행한다.**
 
@@ -805,11 +933,12 @@ TaskCreate({
 
 ```
 // 기본: 동적 합성 카드 사용
+// model은 역할별 명시 핀 (상속 금지): 팀장·분석·비평·핵심구현 = "opus" / 일반 워커 = "sonnet" / 기계적 글루 = "haiku"
 Task({
   team_name: "{team_name}",
   name: "[팀원-이름]",
   subagent_type: "general-purpose",
-  model: "opus",
+  model: "sonnet",  // ← 일반 워커 기본. 역할이 분석·비평·핵심구현이면 "opus"
   prompt: `
 당신은 [역할명]입니다. ([archetype] archetype + [도메인])
 
@@ -871,11 +1000,13 @@ Task({
 3. 핵심 역할이 빠지면 사용자에게 알리고 판단을 요청
 ```
 
-### 6-5. 외부 CLI 실행 (Codex/Gemini/Antigravity)
+### 6-5. 외부 CLI 실행 (Codex/Antigravity)
 
 외부 CLI가 배정된 역할이 있으면, 팀장에게 다음 지시를 포함한다.
-`--provider`는 `codex` | `gemini` | `antigravity` 중 환경 스캔에서 설치 확인된 것을 사용한다
-(antigravity의 실제 바이너리는 `agy`이며 Gemini CLI 후계다).
+`--provider`는 `codex`(코드·대규모 분석) | `antigravity`(디자인/UI) 중 환경 스캔에서 설치 확인된 것을 사용한다
+(antigravity의 실제 바이너리는 `agy`이며 Gemini CLI 대체본이다. `--provider gemini`는 사용하지 않는다).
+
+**검토 역할일 때는 적대적 프롬프트로:** 프롬프트 파일에 "검토해줘"가 아니라 **"다음 산출물의 결함을 찾아 반박하라(refute)"**로 쓴다. build와 다른 family가 검토하는 것이 원칙 — Sonnet/Opus가 만든 것은 Codex가 검토.
 
 ```
 ## 외부 AI 활용
@@ -888,7 +1019,7 @@ Codex CLI로 [역할]을 수행합니다. 다음 절차를 따르세요:
    Bash(run_in_background=true):
    "bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-cli.sh start --provider codex --prompt-file {KKIRIKKIRI_DIR}/prompts/{task-id}.md"
    → 출력되는 JOB_DIR 경로를 저장
-   (Gemini CLI 후계인 Antigravity를 쓰려면 --provider antigravity. 단 agy 1.0.x는
+   (디자인/UI 역할은 --provider antigravity. 단 agy 1.0.x는
     비-TTY에서 stdout 출력이 비는 버그가 있어 results가 빈 경우 Claude 폴백 권장)
 
 3. 완료 대기:
@@ -917,7 +1048,35 @@ SendMessage({
 
 ---
 
-## Step 7: 검증 루프 (Ralph Pattern)
+## Step 6-W: 워크플로우 실행 — 공정 라인 경로
+
+> **이 Step은 공정 라인(Workflows) 경로 전용.**
+
+Step 4-W에서 작성한 스크립트로 **Workflow 도구를 호출**한다. 사용자가 Step 3.5에서 "공정 라인"을 골랐고 이 스킬의 지시가 호출을 명시하므로 유효한 opt-in이다.
+
+```
+Workflow({ script: "<Step 4-W에서 작성한 스크립트 전체>" })
+```
+
+- 호출 직후 Claude Code가 **승인 카드**(phase 목록 + 토큰 경고)를 띄운다 — 이것이 사용자 최종 확인이다.
+- 실행은 **백그라운드** — 세션은 자유롭고, 사용자에게 안내한다:
+  ```
+  공정 라인이 돌기 시작했어요. /workflows 를 입력하면 진행 상황을 볼 수 있어요.
+  완료되면 결과를 정리해서 보여드릴게요.
+  ```
+- TeamCreate·공유 메모리·도메인 카드 등 작전 통제실 인프라는 일절 만들지 않는다.
+- 완료 알림이 오면 → Step 8-W로.
+
+### 6-W 에러 처리
+- 승인 거부 → "다른 방식(작전 통제실)으로 진행할까요?" AskUserQuestion
+- 스크립트 오류 → 수정 후 재호출 (반환된 scriptPath를 Edit 후 `{scriptPath}` 재호출)
+- 중도 중단 → resume 가능함을 안내 (`resumeFromRunId`)
+
+---
+
+## Step 7: 검증 루프 (Ralph Pattern) — 작전 통제실 경로
+
+> **이 Step은 작전 통제실(Teams) 경로 전용.** 공정 라인의 검증은 스크립트 내부 adversarial-verify 스테이지(Step 4-W 규칙 4)가 수행 — 별도 Ralph 루프 없음. 공정 라인은 Step 7-W로.
 
 > **1라운드로 끝내지 않는다. 품질이 충분할 때까지 반복한다.**
 > ddg.kang: "팀리더가 30명 심부름꾼이 구현한거 최종검토 → 나에게 최종 보고 = 버그 하나도 없음"
@@ -1015,7 +1174,20 @@ ELIF 라운드 >= 3:
 
 ---
 
+## Step 7-W: 결과 수신 + 사후 검토 — 공정 라인 경로
+
+> **이 Step은 공정 라인(Workflows) 경로 전용.**
+
+1. **검증은 이미 끝났다** — 스크립트 내부 adversarial-verify 스테이지가 1차 검증을 수행했다.
+2. **cross-model 사후 검토 (선택)**: 결과가 고위험 결정·코드 산출물이고 **Codex CLI가 설치돼 있으면**, 워크플로우 반환값을 `run-cli.sh --provider codex`로 1회 적대 검토("결함을 찾아 반박하라")에 보낸다. 없으면 생략 — 내부 verify 스테이지가 기본 검증.
+3. **결과 미흡 시**: Ralph 루프를 돌리지 않는다. 대신 스크립트의 해당 스테이지를 수정해 **재실행을 제안**한다 (resume으로 완료된 스테이지는 캐시 재사용).
+4. 완료 → Step 8-W로.
+
+---
+
 ## Step 8: 결과 수집 + 리포트
+
+> 작전 통제실 경로는 8-1~8-4를 따른다. **공정 라인은 Step 8-W**(이 섹션 끝)로.
 
 ### 8-1. 팀 종료
 
@@ -1125,6 +1297,23 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 "이번 세션 작업 기록({KKIRIKKIRI_DIR}/)을 삭제할까요? 남겨두면 나중에 참고할 수 있어요."
 ```
 
+### Step 8-W: 공정 라인 결과 리포트
+
+> **공정 라인(Workflows) 경로 전용.** TeamDelete·공유 메모리 정리 불필요.
+
+1. 워크플로우 반환값을 8-2와 같은 형식으로 리포트한다 (팀 구성 → "처리 규모(에이전트 수·스테이지)"로 대체):
+   ```
+   끼리끼리 공정 라인 작업이 완료되었어요!
+
+   🏭 처리: [N개 에이전트 / M개 단계]
+   🎯 목표: [목표]
+   📄 결과: [반환값 요약 또는 산출 파일 경로]
+
+   [핵심 요약 2-3줄]
+   ```
+2. **재사용 안내**: 같은 작업을 반복할 거면 `/workflows`에서 이 런을 선택해 `s`로 저장하면 커맨드가 된다고 안내한다. (팀 저장 8-3의 공정 라인 대응물 — saved-teams에는 저장하지 않는다)
+3. Auto-memory 유도는 8-2와 동일하게 수행.
+
 ---
 
 ## 에러 처리
@@ -1156,7 +1345,7 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 
 ### CLI 실행 실패
 
-- Codex/Gemini CLI 실행 실패 → Claude(Opus)로 해당 작업 수행
+- Codex/agy CLI 실행 실패 → Claude(Opus)로 해당 작업 수행 (검토 역할이었다면 Opus 적대 인스턴스로)
 - 사용자에게 기술적 에러 메시지 그대로 노출 금지
 - 대신: "외부 도구에서 문제가 생겨서 내부 AI로 대체했어요" 수준의 안내
 
@@ -1170,10 +1359,14 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 ## 절대 하지 마 (전체 워크플로우)
 
 - [ ] 유저 확인 없이 팀을 생성하지 마
+- [ ] **Step 3.5 사용자 선택 없이 실행 방식(substrate)을 임의로 정하지 마** — 가용성이 단일일 때만 직행
+- [ ] **사용자가 "공정 라인"을 고르지 않았는데 Workflow 도구를 호출하지 마**
 - [ ] 프리셋을 고정값으로 쓰지 마 — 인터뷰 + 환경스캔으로 동적 조정
-- [ ] 기술 용어를 유저에게 노출하지 마 — Opus/Sonnet/MCP/TeamCreate 등
+- [ ] 기술 용어를 유저에게 노출하지 마 — Opus/Sonnet/MCP/TeamCreate/Workflow 등
 - [ ] 인터뷰 질문 4개 이상 하지 마
-- [ ] Haiku를 어떤 역할에도 배정하지 마
+- [ ] Haiku를 판단이 필요한 역할에 배정하지 마 — 기계적 글루(수집·포맷·추출) 한정
+- [ ] 같은 family끼리의 형식적 검토를 기본으로 삼지 마 — 검토는 Codex→agy→Opus 적대 인스턴스 순. 폴백일 땐 반드시 refute 프롬프트
+- [ ] 공정 라인 경로에서 TeamCreate·공유 메모리·도메인 카드를 만들지 마
 - [ ] 팀장에게 코드 작성을 시키지 마
 - [ ] 에러 메시지를 그대로 보여주지 마
 - [ ] 공유 메모리 파일 초기화 없이 팀을 실행하지 마
@@ -1193,8 +1386,10 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 - [ ] 모든 인터뷰 질문에 "잘 모르겠어요 → 추천대로" 옵션 포함
 - [ ] 팀 구성 제안 시 역할을 일상 용어로 설명
 - [ ] 팀 구성 제안 시 `{KKIRIKKIRI_DIR}/agents/` 파일 경로 목록 함께 표시
-- [ ] 팀 실행 전 반드시 유저 확인
-- [ ] 환경 스캔에서 Codex/Gemini CLI + agency-agents 설치 여부 확인
+- [ ] 팀 실행 전 반드시 유저 확인 (공정 라인은 Workflow 승인 카드가 이 역할)
+- [ ] 환경 스캔에서 실행 방식 가용성(Teams 플래그·Claude Code 버전) + Codex/agy CLI + agency-agents 설치 여부 확인
+- [ ] 워크플로우 스크립트의 모든 agent()에 model 명시 (팬아웃=sonnet / 종합·판단=opus / 기계적=haiku)
+- [ ] 워크플로우 스크립트에 adversarial-verify 스테이지 포함
 - [ ] 프리셋 매칭 실패 시 범용 인터뷰로 전환
 - [ ] 결과 리포트에 팀 구성 + 작업 과정 + 산출물 포함
 - [ ] 팀 생성 직후 공유 메모리 3종 파일 초기화 (TEAM_PLAN, TEAM_PROGRESS, TEAM_FINDINGS)

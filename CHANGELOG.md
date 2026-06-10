@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.20.0] - 2026-06-10
+
+### Added — Substrate-Aware Orchestration (메이저 개편)
+
+설계 문서: `docs/REDESIGN-v0.20.0.md`. 공식 문서(code.claude.com agent-teams/workflows) 근거 + Agent Council(독립 Claude·Gemini) 교차 검증.
+
+- **Step 3.5 실행 방식 선택 신설**: 팀 구성 *전에* 사용자가 AskUserQuestion으로 [작전 통제실(Agent Teams) / 공정 라인(Workflows)]을 직접 선택. 가용성(Teams 플래그·Claude Code 버전 ≥ 2.1.154)으로 선택지 동적 구성, 단일 가용 시 직행, 추천 휴리스틱 포함. Workflow 도구는 사용자가 "공정 라인"을 골랐을 때만 호출.
+- **공정 라인(Workflows) 경로 신설**: Step 4-W(인라인 스크립트 구성 — pipeline/parallel, 스테이지별 model 명시, adversarial-verify 스테이지 필수) → 6-W(Workflow 도구 호출, 승인 카드가 사용자 확인) → 7-W(내부 검증 + 선택적 Codex 사후 검토) → 8-W(반환값 리포트 + `/workflows` 저장 안내). 공유 메모리·도메인 카드 인프라는 만들지 않음.
+- **모델 배정 규칙 재정의**: Opus=팀장·분석·비평·종합·핵심구현 / Sonnet=일반 워커 기본(적극 활용) / Haiku=기계적 글루 한정 부활 / 검토는 build와 다른 family — Codex→agy→Opus 적대 인스턴스(refute 프롬프트) 폴백 체인. 가격 사다리($1/$5–$3/$15–$5/$25) 근거.
+- **외부 CLI 역할 재정의**: Codex=코드·대규모 분석(생산+1순위 검토자), agy=디자인/UI(Gemini CLI 대체본). **Gemini CLI 완전 제거** (2026-06-18 전환).
+
+### Changed
+
+- **Step 6-0 "팬아웃 vs 능동 모드 선택" 삭제**: 작전 통제실은 항상 능동(적응형 척추) — 대량·독립 작업은 Step 3.5에서 공정 라인으로 분기되므로 모드 선택 불필요. coordination-protocols.md와의 프레이밍 모순 해소.
+- **유령 "Step 5.5 라우터" 참조 제거** (스펙에 없는 dangling reference).
+- **check-env 완화**: `EXPERIMENTAL_AGENT_TEAMS` 단독 hard-require → "Teams 플래그 OR Workflows(버전) 중 최소 1개"로 완화. Claude Code 버전 체크 추가. Gemini 감지 제거.
+- presets.md 모델 컬럼 동기화 (Researcher/보조 Developer=Sonnet, 분석 Explorer/Strategist=Opus 유지).
+- commands/kkirikkiri.md allowed-tools에 `Workflow` 추가 (AskUserQuestion은 의도적으로 미포함 — auto-approve 버그 회피).
+
 ## [0.16.2] - 2026-05-19
 
 ### Fixed — Step 5→6 경계 + Step 6-2 Action Vacuum 회귀 (v0.15.2 핫픽스 누락분)

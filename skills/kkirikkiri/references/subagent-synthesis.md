@@ -230,7 +230,7 @@ Task({
   team_name: "{team_name}",
   name: "[팀원-이름]",
   subagent_type: "general-purpose",  // 또는 설치된 외부 에이전트명 (부록 참조)
-  model: "opus",
+  model: "sonnet",  // 일반 워커 기본. 팀장·분석·비평·핵심구현이면 "opus" (역할별 명시 핀)
   prompt: `
 당신은 [역할명]입니다.
 

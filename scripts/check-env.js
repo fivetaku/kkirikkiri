@@ -3,6 +3,10 @@
  * check-env.js — 끼리끼리 설치 환경 점검 (cross-platform)
  *
  * Usage: node check-env.js
+ *
+ * 필수: Claude Code + Node.js + 실행 방식 최소 1개
+ *   - 작전 통제실(Agent Teams): CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 설정
+ *   - 공정 라인(Workflows):     Claude Code 버전 ≥ 2.1.154
  */
 const fs = require('fs');
 const path = require('path');
@@ -12,6 +16,8 @@ const RED = '\x1b[0;31m';
 const GREEN = '\x1b[0;32m';
 const YELLOW = '\x1b[0;33m';
 const NC = '\x1b[0m';
+
+const WORKFLOWS_MIN_VERSION = [2, 1, 154];
 
 const whichCmd = process.platform === 'win32' ? 'where' : 'which';
 
@@ -32,13 +38,26 @@ function commandVersion(name, versionArgs) {
   }
 }
 
-function pass(msg) { process.stdout.write(`  ${GREEN}\u2713${NC} ${msg}\n`); }
-function fail(msg) { process.stdout.write(`  ${RED}\u2717${NC} ${msg}\n`); }
-function warn(msg) { process.stdout.write(`  ${YELLOW}\u25b3${NC} ${msg}\n`); }
+function parseSemver(text) {
+  const m = /(\d+)\.(\d+)\.(\d+)/.exec(text || '');
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+
+function semverGte(a, b) {
+  for (let i = 0; i < 3; i++) {
+    if (a[i] > b[i]) return true;
+    if (a[i] < b[i]) return false;
+  }
+  return true;
+}
+
+function pass(msg) { process.stdout.write(`  ${GREEN}✓${NC} ${msg}\n`); }
+function fail(msg) { process.stdout.write(`  ${RED}✗${NC} ${msg}\n`); }
+function warn(msg) { process.stdout.write(`  ${YELLOW}△${NC} ${msg}\n`); }
 
 process.stdout.write('\n');
 process.stdout.write('끼리끼리 환경 점검\n');
-process.stdout.write('\u2501'.repeat(28) + '\n');
+process.stdout.write('━'.repeat(28) + '\n');
 
 // ── 필수 조건 ──
 process.stdout.write('\n필수 조건:\n');
@@ -46,40 +65,13 @@ process.stdout.write('\n필수 조건:\n');
 let requiredOk = true;
 
 // Claude Code
+let claudeVersionText = '';
 if (hasCommand('claude')) {
-  pass('Claude Code 설치됨');
+  claudeVersionText = commandVersion('claude', ['--version']);
+  pass(`Claude Code 설치됨 (${claudeVersionText})`);
 } else {
   fail('Claude Code 미설치 — https://claude.ai/download');
   requiredOk = false;
-}
-
-// Agent Teams 환경변수
-const home = process.env.HOME || process.env.USERPROFILE || '';
-const settingsFile = path.join(home, '.claude', 'settings.json');
-let agentTeamsSet = false;
-try {
-  if (fs.existsSync(settingsFile)) {
-    const content = fs.readFileSync(settingsFile, 'utf8');
-    agentTeamsSet = content.includes('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS');
-  }
-} catch { /* ignore */ }
-
-if (agentTeamsSet) {
-  pass('Agent Teams 환경변수 설정됨');
-} else {
-  fail('Agent Teams 환경변수 미설정');
-  process.stdout.write('\n');
-  process.stdout.write('    다음을 ~/.claude/settings.json에 추가하세요:\n');
-  process.stdout.write('    { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }\n');
-  requiredOk = false;
-}
-
-// tmux (선택 — Agent Teams는 in-process로 동작, tmux는 split-pane 표시용)
-if (hasCommand('tmux')) {
-  const ver = commandVersion('tmux', ['-V']);
-  pass(`tmux 설치됨 (${ver}) — split-pane 표시 가능`);
-} else {
-  warn('tmux 미설치 — in-process로 정상 동작 (split-pane 표시만 비활성). 원하면 brew/apt install tmux');
 }
 
 // Node.js
@@ -91,23 +83,64 @@ if (hasCommand('node')) {
   requiredOk = false;
 }
 
-// ── 선택 조건 ──
+// ── 실행 방식 (둘 중 최소 1개) ──
+process.stdout.write('\n실행 방식 (둘 중 최소 1개 필요):\n');
+
+// 작전 통제실 (Agent Teams)
+const home = process.env.HOME || process.env.USERPROFILE || '';
+const settingsFile = path.join(home, '.claude', 'settings.json');
+let teamsEnabled = false;
+try {
+  if (fs.existsSync(settingsFile)) {
+    const content = fs.readFileSync(settingsFile, 'utf8');
+    teamsEnabled = content.includes('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS');
+  }
+} catch { /* ignore */ }
+
+if (teamsEnabled) {
+  pass('작전 통제실(Agent Teams) 사용 가능 — 환경변수 설정됨');
+} else {
+  warn('작전 통제실(Agent Teams) 비활성 — 사용하려면 ~/.claude/settings.json에 추가:');
+  process.stdout.write('      { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }\n');
+}
+
+// 공정 라인 (Workflows) — Claude Code 버전 ≥ 2.1.154
+const claudeSemver = parseSemver(claudeVersionText);
+let workflowsAvailable = false;
+if (claudeSemver && semverGte(claudeSemver, WORKFLOWS_MIN_VERSION)) {
+  workflowsAvailable = true;
+  pass(`공정 라인(Workflows) 사용 가능 — Claude Code ${claudeSemver.join('.')} ≥ ${WORKFLOWS_MIN_VERSION.join('.')}`);
+} else if (claudeSemver) {
+  warn(`공정 라인(Workflows) 비활성 — Claude Code ${claudeSemver.join('.')} < ${WORKFLOWS_MIN_VERSION.join('.')}. 업데이트: claude update`);
+} else {
+  warn('공정 라인(Workflows) 확인 불가 — Claude Code 버전을 읽지 못했습니다');
+}
+
+if (!teamsEnabled && !workflowsAvailable) {
+  fail('실행 방식이 하나도 없습니다 — 위 안내에 따라 둘 중 하나를 켜주세요');
+  requiredOk = false;
+}
+
+// tmux (선택 — Agent Teams는 in-process로 동작, tmux는 split-pane 표시용)
+process.stdout.write('\n선택 조건 (표시):\n');
+if (hasCommand('tmux')) {
+  const ver = commandVersion('tmux', ['-V']);
+  pass(`tmux 설치됨 (${ver}) — split-pane 표시 가능`);
+} else {
+  warn('tmux 미설치 — in-process로 정상 동작 (split-pane 표시만 비활성). 원하면 brew/apt install tmux');
+}
+
+// ── 선택 조건 (멀티 모델) ──
 process.stdout.write('\n선택 조건 (멀티 모델):\n');
 
 if (hasCommand('codex')) {
-  pass('Codex CLI 설치됨 — 코드 분석/리뷰 역할 활용 가능');
+  pass('Codex CLI 설치됨 — 코드·대규모 분석 + cross-model 검토 활용 가능');
 } else {
   warn('Codex CLI 미설치 — npm i -g @openai/codex (없어도 동작)');
 }
 
-if (hasCommand('gemini')) {
-  pass('Gemini CLI 설치됨 — 대규모 분석 역할 활용 가능 (※ 개인/Pro/Ultra는 2026-06-18 Antigravity CLI로 전환)');
-} else {
-  warn('Gemini CLI 미설치 — npm i -g @google/gemini-cli (없어도 동작)');
-}
-
 if (hasCommand('agy')) {
-  pass('Antigravity CLI(agy) 설치됨 — Gemini CLI 후계, 대규모 분석 역할 활용 가능');
+  pass('Antigravity CLI(agy) 설치됨 — 디자인/UI 역할 활용 가능 (Gemini CLI 대체본)');
 } else {
   warn('Antigravity CLI(agy) 미설치 — curl -fsSL https://antigravity.google/cli/install.sh | bash (없어도 동작)');
 }
@@ -119,10 +152,13 @@ if (hasCommand('gh')) {
 }
 
 // ── 결과 ──
-process.stdout.write('\n' + '\u2501'.repeat(28) + '\n');
+process.stdout.write('\n' + '━'.repeat(28) + '\n');
 
 if (requiredOk) {
-  process.stdout.write(`${GREEN}모든 필수 조건이 충족되었습니다. /kkirikkiri를 사용할 수 있어요!${NC}\n`);
+  const modes = [];
+  if (teamsEnabled) modes.push('작전 통제실');
+  if (workflowsAvailable) modes.push('공정 라인');
+  process.stdout.write(`${GREEN}필수 조건 충족 (사용 가능: ${modes.join(' + ')}). /kkirikkiri를 사용할 수 있어요!${NC}\n`);
 } else {
   process.stdout.write(`${RED}필수 조건이 충족되지 않았습니다. 위의 안내를 따라 설정해주세요.${NC}\n`);
   process.exit(1);

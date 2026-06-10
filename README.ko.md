@@ -47,8 +47,9 @@
 
 - **자연어 입력 → 실행 중인 팀** — YAML도, 에이전트 정의 파일도 직접 작성할 필요 없음
 - **인터뷰 기반** — 긴 설정 폼 대신 2–3개의 핵심 질문으로 팀을 설계함
-- **환경 인식** — 설치된 도구(Codex CLI, Gemini CLI, `.claude/agents/`)를 탐지해 실제 가용 자원으로 최적 팀을 구성함
-- **멀티 모델** — Claude, Codex CLI, Gemini CLI가 하나의 팀 안에서 각기 다른 역할을 맡을 수 있음
+- **환경 인식** — 설치된 도구(Codex CLI, Antigravity CLI `agy`, `.claude/agents/`)를 탐지해 실제 가용 자원으로 최적 팀을 구성함
+- **멀티 모델** — Claude, Codex CLI(코드·대규모 분석), Antigravity CLI(디자인/UI)가 하나의 팀 안에서 각기 다른 역할을 맡을 수 있음
+- **실행 방식 2종** — 사용자가 직접 선택: 실시간 협업 팀(작전 통제실) 또는 대량 자동 처리 파이프라인(공정 라인)
 - **검증 루프** — 1라운드 결과가 부족하면 팀을 자동으로 재시도하거나 재구성함 (최대 3라운드)
 - **공유 메모리** — `.kkirikkiri/teams/{team_name}/` 파일이 라운드 간에 유지되어 교체된 팀원도 바로 맥락을 파악할 수 있음; 세션마다 독립 디렉토리를 사용해 동시 실행 시 충돌 없음
 - **에이전트 재사용** — 잘 동작한 팀원을 `.claude/agents/`에 저장해 다른 프로젝트에서도 쓸 수 있음
@@ -117,7 +118,7 @@
 
 ### 멀티 모델 지원
 
-Claude + Codex CLI + Gemini CLI가 하나의 팀에서 각각 다른 역할을 맡을 수 있습니다. 설치된 도구를 자동으로 감지해 최적화하고, 외부 CLI가 없어도 Claude만으로 전체 팀을 구성합니다.
+Claude + Codex CLI(코드·대규모 분석, cross-model 검토) + Antigravity CLI `agy`(디자인/UI)가 하나의 팀에서 각각 다른 역할을 맡을 수 있습니다. 설치된 도구를 자동으로 감지해 최적화하고, 외부 CLI가 없어도 Claude만으로 전체 팀을 구성합니다.
 
 ### 에이전트 자동 탐지 및 재사용
 
@@ -167,8 +168,8 @@ Claude + Codex CLI + Gemini CLI가 하나의 팀에서 각각 다른 역할을 �
 ### 선택 (멀티 모델)
 
 ```bash
-npm install -g @openai/codex       # Codex CLI (코드 분석/리뷰)
-npm install -g @google/gemini-cli  # Gemini CLI (디자인/대규모 분석)
+npm install -g @openai/codex                                    # Codex CLI (코드·대규모 분석, cross-model 검토)
+curl -fsSL https://antigravity.google/cli/install.sh | bash     # Antigravity CLI agy (디자인/UI — Gemini CLI 대체본)
 ```
 
 없어도 동작합니다. Claude만으로 팀을 구성합니다.
@@ -181,7 +182,7 @@ npm install -g @google/gemini-cli  # Gemini CLI (디자인/대규모 분석)
 | 4–5명 | 10–30분 | 중간 |
 | 5명+, 멀티라운드 | 30분–1시간 | 높음 |
 
-팀원 수를 줄이거나 Codex/Gemini CLI를 활용하면 비용을 절약할 수 있습니다.
+팀원 수를 줄이거나 Codex/Antigravity CLI를 활용하면 비용을 절약할 수 있습니다.
 
 ---
 

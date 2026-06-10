@@ -12,7 +12,7 @@
 ```
 끼리끼리 세션 요약:
 
-환경: Codex CLI ✓, Gemini CLI ✓, 패키지 매니저 bun
+환경: Codex CLI ✓, Antigravity CLI(agy) ✓, 패키지 매니저 bun
 
 팀 구성과 결과:
 - 프리셋: research, 4명 (팀장 + 리서처 2 + 검증자 1)
@@ -55,7 +55,7 @@
 
 ## 환경 조건
 - Codex CLI: [있음/없음]
-- Gemini CLI: [있음/없음]
+- Antigravity CLI(agy): [있음/없음]
 
 ## 성과
 - 라운드: [수행 라운드 수]
