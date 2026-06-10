@@ -4,8 +4,8 @@
 # Usage: bash check-env.sh
 #
 # 필수: Claude Code + Node.js + 실행 방식 최소 1개
-#   - 작전 통제실(Agent Teams): CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 설정
-#   - 공정 라인(Workflows):     Claude Code 버전 ≥ 2.1.154
+#   - Agent Teams: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 설정
+#   - Workflow:     Claude Code 버전 ≥ 2.1.154
 
 set -euo pipefail
 
@@ -60,26 +60,26 @@ fi
 echo ""
 echo "실행 방식 (둘 중 최소 1개 필요):"
 
-# 작전 통제실 (Agent Teams)
+# Agent Teams
 SETTINGS_FILE="$HOME/.claude/settings.json"
 TEAMS_ENABLED=false
 if [ -f "$SETTINGS_FILE" ] && grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" "$SETTINGS_FILE" 2>/dev/null; then
   TEAMS_ENABLED=true
-  pass "작전 통제실(Agent Teams) 사용 가능 — 환경변수 설정됨"
+  pass "Agent Teams 사용 가능 — 환경변수 설정됨"
 else
-  warn "작전 통제실(Agent Teams) 비활성 — 사용하려면 ~/.claude/settings.json에 추가:"
+  warn "Agent Teams 비활성 — 사용하려면 ~/.claude/settings.json에 추가:"
   echo '      { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }'
 fi
 
-# 공정 라인 (Workflows) — Claude Code 버전 ≥ 2.1.154
+# Workflow — Claude Code 버전 ≥ 2.1.154
 WORKFLOWS_AVAILABLE=false
 if [ -n "$CLAUDE_VERSION" ] && semver_gte "$CLAUDE_VERSION" "$WORKFLOWS_MIN"; then
   WORKFLOWS_AVAILABLE=true
-  pass "공정 라인(Workflows) 사용 가능 — Claude Code $CLAUDE_VERSION ≥ $WORKFLOWS_MIN"
+  pass "Workflow 사용 가능 — Claude Code $CLAUDE_VERSION ≥ $WORKFLOWS_MIN"
 elif [ -n "$CLAUDE_VERSION" ]; then
-  warn "공정 라인(Workflows) 비활성 — Claude Code $CLAUDE_VERSION < $WORKFLOWS_MIN. 업데이트: claude update"
+  warn "Workflow 비활성 — Claude Code $CLAUDE_VERSION < $WORKFLOWS_MIN. 업데이트: claude update"
 else
-  warn "공정 라인(Workflows) 확인 불가 — Claude Code 버전을 읽지 못했습니다"
+  warn "Workflow 확인 불가 — Claude Code 버전을 읽지 못했습니다"
 fi
 
 if [ "$TEAMS_ENABLED" = false ] && [ "$WORKFLOWS_AVAILABLE" = false ]; then
@@ -126,9 +126,9 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 if [ "$REQUIRED_OK" = true ]; then
   MODES=""
-  [ "$TEAMS_ENABLED" = true ] && MODES="작전 통제실"
+  [ "$TEAMS_ENABLED" = true ] && MODES="Agent Teams"
   if [ "$WORKFLOWS_AVAILABLE" = true ]; then
-    [ -n "$MODES" ] && MODES="$MODES + 공정 라인" || MODES="공정 라인"
+    [ -n "$MODES" ] && MODES="$MODES + Workflow" || MODES="Workflow"
   fi
   echo -e "${GREEN}필수 조건 충족 (사용 가능: $MODES). /kkirikkiri를 사용할 수 있어요!${NC}"
 else

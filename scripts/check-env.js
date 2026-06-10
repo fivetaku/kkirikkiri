@@ -5,8 +5,8 @@
  * Usage: node check-env.js
  *
  * 필수: Claude Code + Node.js + 실행 방식 최소 1개
- *   - 작전 통제실(Agent Teams): CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 설정
- *   - 공정 라인(Workflows):     Claude Code 버전 ≥ 2.1.154
+ *   - Agent Teams: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 설정
+ *   - Workflow:     Claude Code 버전 ≥ 2.1.154
  */
 const fs = require('fs');
 const path = require('path');
@@ -86,7 +86,7 @@ if (hasCommand('node')) {
 // ── 실행 방식 (둘 중 최소 1개) ──
 process.stdout.write('\n실행 방식 (둘 중 최소 1개 필요):\n');
 
-// 작전 통제실 (Agent Teams)
+// Agent Teams
 const home = process.env.HOME || process.env.USERPROFILE || '';
 const settingsFile = path.join(home, '.claude', 'settings.json');
 let teamsEnabled = false;
@@ -98,22 +98,22 @@ try {
 } catch { /* ignore */ }
 
 if (teamsEnabled) {
-  pass('작전 통제실(Agent Teams) 사용 가능 — 환경변수 설정됨');
+  pass('Agent Teams 사용 가능 — 환경변수 설정됨');
 } else {
-  warn('작전 통제실(Agent Teams) 비활성 — 사용하려면 ~/.claude/settings.json에 추가:');
+  warn('Agent Teams 비활성 — 사용하려면 ~/.claude/settings.json에 추가:');
   process.stdout.write('      { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }\n');
 }
 
-// 공정 라인 (Workflows) — Claude Code 버전 ≥ 2.1.154
+// Workflow — Claude Code 버전 ≥ 2.1.154
 const claudeSemver = parseSemver(claudeVersionText);
 let workflowsAvailable = false;
 if (claudeSemver && semverGte(claudeSemver, WORKFLOWS_MIN_VERSION)) {
   workflowsAvailable = true;
-  pass(`공정 라인(Workflows) 사용 가능 — Claude Code ${claudeSemver.join('.')} ≥ ${WORKFLOWS_MIN_VERSION.join('.')}`);
+  pass(`Workflow 사용 가능 — Claude Code ${claudeSemver.join('.')} ≥ ${WORKFLOWS_MIN_VERSION.join('.')}`);
 } else if (claudeSemver) {
-  warn(`공정 라인(Workflows) 비활성 — Claude Code ${claudeSemver.join('.')} < ${WORKFLOWS_MIN_VERSION.join('.')}. 업데이트: claude update`);
+  warn(`Workflow 비활성 — Claude Code ${claudeSemver.join('.')} < ${WORKFLOWS_MIN_VERSION.join('.')}. 업데이트: claude update`);
 } else {
-  warn('공정 라인(Workflows) 확인 불가 — Claude Code 버전을 읽지 못했습니다');
+  warn('Workflow 확인 불가 — Claude Code 버전을 읽지 못했습니다');
 }
 
 if (!teamsEnabled && !workflowsAvailable) {
@@ -156,8 +156,8 @@ process.stdout.write('\n' + '━'.repeat(28) + '\n');
 
 if (requiredOk) {
   const modes = [];
-  if (teamsEnabled) modes.push('작전 통제실');
-  if (workflowsAvailable) modes.push('공정 라인');
+  if (teamsEnabled) modes.push('Agent Teams');
+  if (workflowsAvailable) modes.push('Workflow');
   process.stdout.write(`${GREEN}필수 조건 충족 (사용 가능: ${modes.join(' + ')}). /kkirikkiri를 사용할 수 있어요!${NC}\n`);
 } else {
   process.stdout.write(`${RED}필수 조건이 충족되지 않았습니다. 위의 안내를 따라 설정해주세요.${NC}\n`);

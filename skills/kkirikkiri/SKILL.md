@@ -32,15 +32,15 @@ description: Auto-assembles and runs an AI agent team from one natural-language 
 | Step 진입 | Read 대상 |
 |----------|-----------|
 | Step 3 진입 | `interview-guide.md` + `metaphor-guide.md` |
-| Step 4 진입 (작전 통제실 경로) | `subagent-synthesis.md` (동적 합성 가이드) + `team-prompts.md` (archetype 7종 마스터) |
-| Step 6 진입 (작전 통제실 경로) | `coordination-protocols.md` (적응형 척추 — Teams 경로 항상 적용) |
+| Step 4 진입 (Agent Teams 경로) | `subagent-synthesis.md` (동적 합성 가이드) + `team-prompts.md` (archetype 7종 마스터) |
+| Step 6 진입 (Agent Teams 경로) | `coordination-protocols.md` (적응형 척추 — Teams 경로 항상 적용) |
 | Step 6-2 진입 | `shared-memory.md` |
 | Step 6-2.5 진입 | `subagent-synthesis.md` (이미 Step 4에서 로드됨, 재참조 시 캐시) |
 | Step 6-4 진입 | `team-prompts.md` (이미 Step 4에서 로드됨) |
 | Step 7-6 진입 | `validation-guide.md` |
 | Step 8-2 직후 | `output-guide.md` |
 
-> 공정 라인(Workflows) 경로는 Step 4-W/6-W/7-W를 따른다 — 위 표의 Teams 전용 Read(coordination-protocols, shared-memory, team-prompts)는 불필요.
+> Workflow 경로는 Step 4-W/6-W/7-W를 따른다 — 위 표의 Teams 전용 Read(coordination-protocols, shared-memory, team-prompts)는 불필요.
 
 > 위 표는 인덱스다. 실제 도구 호출은 각 Step 본문의 `🚨 EXECUTE NOW: Read(...)` 박스를 발견하면 즉시 실행한다. 박스를 건너뛰지 말 것.
 
@@ -61,8 +61,8 @@ KKIRIKKIRI_DIR={프로젝트루트}/.kkirikkiri/teams/{team_name}
 Step 1:   의도 파악 + 프리셋 매칭
 Step 2:   환경 스캔 (백그라운드) — 실행 방식 가용성 포함
 Step 3:   인터뷰 (AskUserQuestion)
-Step 3.5: 실행 방식 선택 (AskUserQuestion) — 작전 통제실 vs 공정 라인
-   ├─ [작전 통제실 = Agent Teams]          ├─ [공정 라인 = Workflows]
+Step 3.5: 실행 방식 선택 (AskUserQuestion) — Agent Teams vs Workflow
+   ├─ [Agent Teams 경로]                   ├─ [Workflow 경로]
 Step 4:   동적 팀 구성                      Step 4-W: 워크플로우 스크립트 구성
 Step 5:   팀 구성 제안 + 유저 확인          (확인은 Workflow 승인 카드가 대신)
 Step 6:   팀 생성 + 공유 메모리 + 실행      Step 6-W: Workflow 도구 호출
@@ -70,13 +70,13 @@ Step 7:   검증 루프 (Ralph)                Step 7-W: 스크립트 내부 검
 Step 8:   결과 수집 + 리포트               Step 8-W: 반환값 리포트
 ```
 
-**substrate 분기 원칙**: Step 3.5에서 사용자가 고른 실행 방식에 따라 두 경로는 **Step 4부터 완전히 분기**한다. 작전 통제실 = 영속 팀 + 공유메모리 + Ralph 루프, 공정 라인 = 결정론 스크립트 + 스크립트 변수 + 내부 검증 스테이지.
+**substrate 분기 원칙**: Step 3.5에서 사용자가 고른 실행 방식에 따라 두 경로는 **Step 4부터 완전히 분기**한다. Agent Teams = 영속 팀 + 공유메모리 + Ralph 루프, Workflow = 결정론 스크립트 + 스크립트 변수 + 내부 검증 스테이지.
 
 ### 핵심 운영 원칙
 
-**1. 기억 외부화**: 클로드의 기억력을 믿지 마. 중요한 결정은 반드시 파일에 기록. (작전 통제실 경로 — 공정 라인은 스크립트 변수가 이 역할)
+**1. 기억 외부화**: 클로드의 기억력을 믿지 마. 중요한 결정은 반드시 파일에 기록. (Agent Teams 경로 — Workflow는 스크립트 변수가 이 역할)
 **2. 심부름꾼 패턴**: 팀원은 필요하면 하위 에이전트를 스폰하여 병렬 작업 가능.
-**3. 검증 루프**: 작전 통제실은 Ralph 루프, 공정 라인은 스크립트 내부 adversarial-verify 스테이지.
+**3. 검증 루프**: Agent Teams는 Ralph 루프, Workflow는 스크립트 내부 adversarial-verify 스테이지.
 **4. build ≠ review family**: 만든 모델과 검토하는 모델은 다른 family가 기본 (Codex → agy → Opus 적대 인스턴스 폴백).
 
 ---
@@ -323,7 +323,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 4. **절대 금지**:
    - 4개 이상 질문 금지
-   - 기술 용어(Opus, Sonnet, MCP, Agent Teams) 유저에게 노출 금지
+   - 용어는 공식 명칭(Agent Teams, Workflow, Opus, Sonnet, Codex 등)을 그대로 쓰되 **한글 설명을 병기**한다. 내부 구현(TeamCreate, SendMessage, 파일 경로)은 노출 금지
    - 설명 없이 옵션만 나열 금지
 
 5. **generic 프리셋일 경우**:
@@ -340,17 +340,17 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 | teams_enabled | workflows_available | 동작 |
 |:---:|:---:|---|
 | true | true | **AskUserQuestion 2지선다** (아래) |
-| true | false | 질문 생략 → 작전 통제실 직행 (Step 4) |
-| false | true | 질문 생략 → 공정 라인 직행 (Step 4-W) |
+| true | false | 질문 생략 → Agent Teams 직행 (Step 4) |
+| false | true | 질문 생략 → Workflow 직행 (Step 4-W) |
 | false | false | 실행 불가 — "둘 중 하나를 켜야 해요" 안내 후 종료 (check-env 안내 참조) |
 
 ### 추천 휴리스틱 — "(추천)" 표시 결정
 
 | 신호 | 추천 |
 |---|---|
-| 수렴·관점충돌·설계결정·적대적 리뷰·트레이드오프 / "결정해줘"·"검토·비평해줘" / 프리셋 product·analysis | **작전 통제실** |
-| 독립·대량·결정론 / "전부·모든·N개" / 감사·마이그레이션·다수 소스 교차검증 / 프리셋 research·대규모 development | **공정 라인** |
-| 애매하면 | 작전 통제실 (소규모 안전 기본값). 단 명백히 대량이면 공정 라인 |
+| 수렴·관점충돌·설계결정·적대적 리뷰·트레이드오프 / "결정해줘"·"검토·비평해줘" / 프리셋 product·analysis | **Agent Teams** |
+| 독립·대량·결정론 / "전부·모든·N개" / 감사·마이그레이션·다수 소스 교차검증 / 프리셋 research·대규모 development | **Workflow** |
+| 애매하면 | Agent Teams (소규모 안전 기본값). 단 명백히 대량이면 Workflow |
 
 ### EXECUTE — AskUserQuestion 호출 (2지선다일 때)
 
@@ -363,8 +363,8 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
       "question": "이 작업을 어떤 방식으로 진행할까요?",
       "header": "실행 방식",
       "options": [
-        {"label": "작전 통제실 (실시간 협업)", "description": "AI 팀원들이 서로 의견을 주고받으며 토론하고 수렴해요. 설계 결정, 깊은 검토, 비평에 강해요."},
-        {"label": "공정 라인 (대량 자동 처리)", "description": "수십 개 작업을 자동으로 병렬 처리해요. 백그라운드로 돌고 재실행도 가능해요. 대량 리서치·감사·일괄 작업에 강해요."}
+        {"label": "Agent Teams (실시간 협업)", "description": "AI 팀원들이 서로 의견을 주고받으며 토론하고 수렴해요. 설계 결정, 깊은 검토, 비평에 강해요."},
+        {"label": "Workflow (대량 자동 처리)", "description": "수십 개 작업을 자동으로 병렬 처리해요. 백그라운드로 돌고 재실행도 가능해요. 대량 리서치·감사·일괄 작업에 강해요."}
       ],
       "multiSelect": false
     }
@@ -373,16 +373,16 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 ```
 
 **응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
-- "작전 통제실" → 즉시 Step 4(동적 팀 구성)의 EXECUTE NOW Read 박스 실행
-- "공정 라인" → 즉시 Step 4-W(워크플로우 스크립트 구성)로 진행
+- "Agent Teams" → 즉시 Step 4(동적 팀 구성)의 EXECUTE NOW Read 박스 실행
+- "Workflow" → 즉시 Step 4-W(워크플로우 스크립트 구성)로 진행
 
-> ⚠️ Workflow 도구는 사용자가 "공정 라인"을 골랐을 때만 호출한다 (스킬 지시 = 유효 opt-in이지만, 사용자 선택 없이 임의 호출 금지).
+> ⚠️ Workflow 도구는 사용자가 "Workflow"을 골랐을 때만 호출한다 (스킬 지시 = 유효 opt-in이지만, 사용자 선택 없이 임의 호출 금지).
 
 ---
 
-## Step 4: 동적 팀 구성 (archetype 매칭 + 동적 합성) — 작전 통제실 경로
+## Step 4: 동적 팀 구성 (archetype 매칭 + 동적 합성) — Agent Teams 경로
 
-> **이 Step은 작전 통제실(Teams) 경로 전용.** 공정 라인은 Step 4-W로.
+> **이 Step은 Agent Teams 경로 전용.** Workflow는 Step 4-W로.
 
 > **🚨 EXECUTE NOW — Step 4 진입 즉시 실행 (2개 파일 병렬 Read):**
 > ```
@@ -498,9 +498,9 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ---
 
-## Step 4-W: 워크플로우 스크립트 구성 — 공정 라인 경로
+## Step 4-W: 워크플로우 스크립트 구성 — Workflow 경로
 
-> **이 Step은 공정 라인(Workflows) 경로 전용.** 작전 통제실은 Step 4로.
+> **이 Step은 Workflow 경로 전용.** Agent Teams는 Step 4로.
 > 공유 메모리(6-2)·KKIRIKKIRI_DIR·도메인 카드 합성은 **생성하지 않는다** — 중간 결과는 스크립트 변수에 보관된다.
 
 오케스트레이터(이 스킬을 실행 중인 Claude)가 인터뷰 답변을 바탕으로 워크플로우 스크립트를 **인라인으로** 작성한다.
@@ -543,14 +543,14 @@ return await agent(`검증 통과 결과만 종합 리포트로: ...`, {model: '
 
 스크립트 작성 완료 → **Step 5를 건너뛰고 즉시 Step 6-W로 진행** (Workflow 도구의 승인 카드가 사용자 확인 역할 — 이중 승인 방지). 사용자에게는 한 줄만 안내:
 ```
-공정 라인을 구성했어요. 실행 승인 창이 뜨면 내용을 확인하고 시작해주세요.
+Workflow를 구성했어요. 실행 승인 창이 뜨면 내용을 확인하고 시작해주세요.
 ```
 
 ---
 
-## Step 5: 팀 구성 제안 + 유저 확인 — 작전 통제실 경로
+## Step 5: 팀 구성 제안 + 유저 확인 — Agent Teams 경로
 
-> **이 Step은 작전 통제실(Teams) 경로 전용.** 공정 라인은 Step 5를 건너뛴다 (Workflow 승인 카드가 확인 역할).
+> **이 Step은 Agent Teams 경로 전용.** Workflow는 Step 5를 건너뛴다 (Workflow 승인 카드가 확인 역할).
 
 최종 팀 구성을 사용자에게 보여주고 확인을 받습니다.
 
@@ -562,9 +562,9 @@ return await agent(`검증 통과 결과만 종합 리포트로: ...`, {model: '
 📋 목표: [인터뷰에서 파악한 목표]
 
 팀 구성:
-├── 팀장 — [구체적 역할 설명] (가장 똑똑한 AI)
-├── [역할명 1] — [구체적 역할 설명] (전문 AI)
-├── [역할명 2] — [구체적 역할 설명] (전문 AI)
+├── 팀장 — [구체적 역할 설명] (Opus — 가장 똑똑한 모델)
+├── [역할명 1] — [구체적 역할 설명] (Sonnet — 균형형 모델)
+├── [역할명 2] — [구체적 역할 설명] (Sonnet — 균형형 모델)
 └── (선택) [외부 도구] — [역할 설명] (백그라운드)
 
 예상 작업 방식:
@@ -599,20 +599,22 @@ return await agent(`검증 통과 결과만 종합 리포트로: ...`, {model: '
    대신 깊이가 좀 얕아질 수 있어요.
 ```
 
-### 모델 비유 용어 (유저에게 보여줄 때)
+### 용어 표기 (유저에게 보여줄 때 — 공식 용어 + 한글 설명 병기)
 
-| 내부 모델명 | 유저에게 보여줄 표현 | 설명 |
-|------------|-------------------|------|
-| Opus | "가장 똑똑한 AI" | 복잡한 판단, 기획, 통합에 적합 |
-| Sonnet | "전문 AI" 또는 "균형잡힌 AI" | 실행력 좋고 효율적 — 워커 기본 |
-| Haiku | "빠른 일꾼 AI" | 기계적 잡일 한정 (포맷·수집·추출) |
-| Codex CLI | "코드·대규모 분석 AI" | 코드 분석/리뷰 + 대규모 분석 특화 |
-| Antigravity CLI(agy) | "디자인 전문 AI" | 디자인/UI 특화 (Gemini CLI 대체본) |
+| 공식 용어 (그대로 표기) | 병기할 한글 설명 |
+|------------|-------------------|
+| Opus | "가장 똑똑한 모델" — 복잡한 판단, 기획, 통합 |
+| Sonnet | "균형형 모델" — 실행력 좋고 효율적, 워커 기본 |
+| Haiku | "경량·고속 모델" — 기계적 잡일 한정 (포맷·수집·추출) |
+| Codex CLI | "OpenAI 코드·대규모 분석 도구" |
+| Antigravity CLI(agy) | "디자인/UI 도구" (Gemini CLI 후속) |
+| Agent Teams | "실시간 협업 팀" |
+| Workflow | "대량 자동 병렬 처리" |
 
-### 제안 시 금지사항
-- 모델명(Opus, Sonnet) 노출 금지
-- 기술 용어(TeamCreate, Task, MCP) 노출 금지
-- 위의 비유 용어표를 사용하여 일상 용어로 설명
+### 제안 시 규칙
+- **공식 용어를 숨기지 않는다** — 표기 형식: `공식 용어 (한글 설명)`. 예: "Opus (가장 똑똑한 모델)"
+- 내부 구현(TeamCreate, Task, SendMessage, 내부 파일 경로)은 노출 금지 — 사용자가 알 필요 없는 배관
+- 설명 없이 용어만 던지는 것도 금지 — 반드시 한글 설명 병기
 
 ### 유저 확인
 
@@ -668,15 +670,15 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 
 ---
 
-## Step 6: 팀 생성 + 공유 메모리 + 실행 — 작전 통제실 경로
+## Step 6: 팀 생성 + 공유 메모리 + 실행 — Agent Teams 경로
 
-> **이 Step은 작전 통제실(Teams) 경로 전용.** 공정 라인은 Step 6-W로.
+> **이 Step은 Agent Teams 경로 전용.** Workflow는 Step 6-W로.
 
 확인을 받으면 Claude Code Agent Teams를 사용하여 팀을 생성하고 실행한다.
 
 ### 6-0. 적응형 척추 (항상 적용)
 
-작전 통제실은 **항상 능동 코디네이션(적응형 척추)으로 동작한다. 모드 선택은 없다** — 대량·독립·결정론 작업은 Step 3.5에서 이미 공정 라인으로 분기됐기 때문.
+Agent Teams는 **항상 능동 코디네이션(적응형 척추)으로 동작한다. 모드 선택은 없다** — 대량·독립·결정론 작업은 Step 3.5에서 이미 Workflow로 분기됐기 때문.
 
 > **🚨 EXECUTE NOW — Step 6 진입 즉시 실행:**
 > ```
@@ -686,7 +688,7 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 
 - 팀장 프롬프트에 **능동 구동 루프(drive→inspect→re-inject)를 주입**한다. 팀장은 collect-at-end 금지 — 중간 산출을 읽고 그때그때 재지시/재배분/런타임 스폰.
 - 6-4 스폰은 **영속**(수렴 전 shutdown 금지) + 매 라운드 보고 의무로 작성한다.
-- 비용 주의: 능동 코디네이션은 토큰이 무겁다(N명 wake+읽기+응답/라운드). **소규모(N≤4) 권장.** 대량·루틴이 섞여 있으면 사용자에게 공정 라인 재안내를 고려.
+- 비용 주의: 능동 코디네이션은 토큰이 무겁다(N명 wake+읽기+응답/라운드). **소규모(N≤4) 권장.** 대량·루틴이 섞여 있으면 사용자에게 Workflow 재안내를 고려.
 
 > **🚨 EXECUTE NOW — 이 Step에 진입했다는 것은 Step 5에서 "네, 시작해주세요" 확인을 받았다는 뜻이다. 아래 6-1 / 6-2 / 6-2.5 / 6-4의 코드 블록은 예시가 아니라 실제 도구 호출이다. 한 단계도 건너뛰지 말고 순차 실행하며, 각 도구 호출 완료를 확인한 후에만 다음 단계로 진행한다.**
 
@@ -1048,11 +1050,11 @@ SendMessage({
 
 ---
 
-## Step 6-W: 워크플로우 실행 — 공정 라인 경로
+## Step 6-W: 워크플로우 실행 — Workflow 경로
 
-> **이 Step은 공정 라인(Workflows) 경로 전용.**
+> **이 Step은 Workflow 경로 전용.**
 
-Step 4-W에서 작성한 스크립트로 **Workflow 도구를 호출**한다. 사용자가 Step 3.5에서 "공정 라인"을 골랐고 이 스킬의 지시가 호출을 명시하므로 유효한 opt-in이다.
+Step 4-W에서 작성한 스크립트로 **Workflow 도구를 호출**한다. 사용자가 Step 3.5에서 "Workflow"을 골랐고 이 스킬의 지시가 호출을 명시하므로 유효한 opt-in이다.
 
 ```
 Workflow({ script: "<Step 4-W에서 작성한 스크립트 전체>" })
@@ -1061,22 +1063,22 @@ Workflow({ script: "<Step 4-W에서 작성한 스크립트 전체>" })
 - 호출 직후 Claude Code가 **승인 카드**(phase 목록 + 토큰 경고)를 띄운다 — 이것이 사용자 최종 확인이다.
 - 실행은 **백그라운드** — 세션은 자유롭고, 사용자에게 안내한다:
   ```
-  공정 라인이 돌기 시작했어요. /workflows 를 입력하면 진행 상황을 볼 수 있어요.
+  Workflow가 백그라운드에서 돌기 시작했어요. /workflows 를 입력하면 진행 상황을 볼 수 있어요.
   완료되면 결과를 정리해서 보여드릴게요.
   ```
-- TeamCreate·공유 메모리·도메인 카드 등 작전 통제실 인프라는 일절 만들지 않는다.
+- TeamCreate·공유 메모리·도메인 카드 등 Agent Teams 인프라는 일절 만들지 않는다.
 - 완료 알림이 오면 → Step 8-W로.
 
 ### 6-W 에러 처리
-- 승인 거부 → "다른 방식(작전 통제실)으로 진행할까요?" AskUserQuestion
+- 승인 거부 → "다른 방식(Agent Teams)으로 진행할까요?" AskUserQuestion
 - 스크립트 오류 → 수정 후 재호출 (반환된 scriptPath를 Edit 후 `{scriptPath}` 재호출)
 - 중도 중단 → resume 가능함을 안내 (`resumeFromRunId`)
 
 ---
 
-## Step 7: 검증 루프 (Ralph Pattern) — 작전 통제실 경로
+## Step 7: 검증 루프 (Ralph Pattern) — Agent Teams 경로
 
-> **이 Step은 작전 통제실(Teams) 경로 전용.** 공정 라인의 검증은 스크립트 내부 adversarial-verify 스테이지(Step 4-W 규칙 4)가 수행 — 별도 Ralph 루프 없음. 공정 라인은 Step 7-W로.
+> **이 Step은 Agent Teams 경로 전용.** Workflow의 검증은 스크립트 내부 adversarial-verify 스테이지(Step 4-W 규칙 4)가 수행 — 별도 Ralph 루프 없음. Workflow는 Step 7-W로.
 
 > **1라운드로 끝내지 않는다. 품질이 충분할 때까지 반복한다.**
 > ddg.kang: "팀리더가 30명 심부름꾼이 구현한거 최종검토 → 나에게 최종 보고 = 버그 하나도 없음"
@@ -1174,9 +1176,9 @@ ELIF 라운드 >= 3:
 
 ---
 
-## Step 7-W: 결과 수신 + 사후 검토 — 공정 라인 경로
+## Step 7-W: 결과 수신 + 사후 검토 — Workflow 경로
 
-> **이 Step은 공정 라인(Workflows) 경로 전용.**
+> **이 Step은 Workflow 경로 전용.**
 
 1. **검증은 이미 끝났다** — 스크립트 내부 adversarial-verify 스테이지가 1차 검증을 수행했다.
 2. **cross-model 사후 검토 (선택)**: 결과가 고위험 결정·코드 산출물이고 **Codex CLI가 설치돼 있으면**, 워크플로우 반환값을 `run-cli.sh --provider codex`로 1회 적대 검토("결함을 찾아 반박하라")에 보낸다. 없으면 생략 — 내부 verify 스테이지가 기본 검증.
@@ -1187,7 +1189,7 @@ ELIF 라운드 >= 3:
 
 ## Step 8: 결과 수집 + 리포트
 
-> 작전 통제실 경로는 8-1~8-4를 따른다. **공정 라인은 Step 8-W**(이 섹션 끝)로.
+> Agent Teams 경로는 8-1~8-4를 따른다. **Workflow는 Step 8-W**(이 섹션 끝)로.
 
 ### 8-1. 팀 종료
 
@@ -1297,13 +1299,13 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 "이번 세션 작업 기록({KKIRIKKIRI_DIR}/)을 삭제할까요? 남겨두면 나중에 참고할 수 있어요."
 ```
 
-### Step 8-W: 공정 라인 결과 리포트
+### Step 8-W: Workflow 결과 리포트
 
-> **공정 라인(Workflows) 경로 전용.** TeamDelete·공유 메모리 정리 불필요.
+> **Workflow 경로 전용.** TeamDelete·공유 메모리 정리 불필요.
 
 1. 워크플로우 반환값을 8-2와 같은 형식으로 리포트한다 (팀 구성 → "처리 규모(에이전트 수·스테이지)"로 대체):
    ```
-   끼리끼리 공정 라인 작업이 완료되었어요!
+   끼리끼리 Workflow 작업이 완료되었어요!
 
    🏭 처리: [N개 에이전트 / M개 단계]
    🎯 목표: [목표]
@@ -1311,7 +1313,7 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 
    [핵심 요약 2-3줄]
    ```
-2. **재사용 안내**: 같은 작업을 반복할 거면 `/workflows`에서 이 런을 선택해 `s`로 저장하면 커맨드가 된다고 안내한다. (팀 저장 8-3의 공정 라인 대응물 — saved-teams에는 저장하지 않는다)
+2. **재사용 안내**: 같은 작업을 반복할 거면 `/workflows`에서 이 런을 선택해 `s`로 저장하면 커맨드가 된다고 안내한다. (팀 저장 8-3의 Workflow 대응물 — saved-teams에는 저장하지 않는다)
 3. Auto-memory 유도는 8-2와 동일하게 수행.
 
 ---
@@ -1360,13 +1362,13 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 
 - [ ] 유저 확인 없이 팀을 생성하지 마
 - [ ] **Step 3.5 사용자 선택 없이 실행 방식(substrate)을 임의로 정하지 마** — 가용성이 단일일 때만 직행
-- [ ] **사용자가 "공정 라인"을 고르지 않았는데 Workflow 도구를 호출하지 마**
+- [ ] **사용자가 "Workflow"을 고르지 않았는데 Workflow 도구를 호출하지 마**
 - [ ] 프리셋을 고정값으로 쓰지 마 — 인터뷰 + 환경스캔으로 동적 조정
-- [ ] 기술 용어를 유저에게 노출하지 마 — Opus/Sonnet/MCP/TeamCreate/Workflow 등
+- [ ] 공식 용어(Agent Teams/Workflow/Opus/Sonnet/Codex/agy)를 메타포로 대체하지 마 — 그대로 쓰고 한글 설명 병기. 내부 구현(TeamCreate/SendMessage/Task/파일 경로)만 노출 금지
 - [ ] 인터뷰 질문 4개 이상 하지 마
 - [ ] Haiku를 판단이 필요한 역할에 배정하지 마 — 기계적 글루(수집·포맷·추출) 한정
 - [ ] 같은 family끼리의 형식적 검토를 기본으로 삼지 마 — 검토는 Codex→agy→Opus 적대 인스턴스 순. 폴백일 땐 반드시 refute 프롬프트
-- [ ] 공정 라인 경로에서 TeamCreate·공유 메모리·도메인 카드를 만들지 마
+- [ ] Workflow 경로에서 TeamCreate·공유 메모리·도메인 카드를 만들지 마
 - [ ] 팀장에게 코드 작성을 시키지 마
 - [ ] 에러 메시지를 그대로 보여주지 마
 - [ ] 공유 메모리 파일 초기화 없이 팀을 실행하지 마
@@ -1386,7 +1388,7 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 - [ ] 모든 인터뷰 질문에 "잘 모르겠어요 → 추천대로" 옵션 포함
 - [ ] 팀 구성 제안 시 역할을 일상 용어로 설명
 - [ ] 팀 구성 제안 시 `{KKIRIKKIRI_DIR}/agents/` 파일 경로 목록 함께 표시
-- [ ] 팀 실행 전 반드시 유저 확인 (공정 라인은 Workflow 승인 카드가 이 역할)
+- [ ] 팀 실행 전 반드시 유저 확인 (Workflow는 Workflow 승인 카드가 이 역할)
 - [ ] 환경 스캔에서 실행 방식 가용성(Teams 플래그·Claude Code 버전) + Codex/agy CLI + agency-agents 설치 여부 확인
 - [ ] 워크플로우 스크립트의 모든 agent()에 model 명시 (팬아웃=sonnet / 종합·판단=opus / 기계적=haiku)
 - [ ] 워크플로우 스크립트에 adversarial-verify 스테이지 포함

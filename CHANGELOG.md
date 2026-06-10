@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.20.1] - 2026-06-10
+
+### Changed — 용어 정책 전환: 공식 용어 + 한글 설명 병기
+
+v0.20.0 첫 실행에서 Step 3.5 선택지가 "공정 라인/작전 통제실"이라는 자체 메타포로 표시되는 문제 확인. **원칙 교정: 용어·기능명은 공식 문서 기반 명칭(Agent Teams, Workflow, Opus, Sonnet, MCP 등)을 그대로 쓰고, 한글은 설명으로만 병기한다.**
+
+- Step 3.5 선택지: "작전 통제실/공정 라인" → **"Agent Teams (실시간 협업)" / "Workflow (대량 자동 처리)"**
+- SKILL.md·check-env·commands·coordination-protocols·README.ko 전체에서 자체 메타포 명칭을 공식 용어로 교체 (한글 조사 교정 포함)
+- **모델명 은닉 정책 폐기**: "가장 똑똑한 AI/전문 AI" 단독 표기 → `공식 용어 (한글 설명)` 병기 형식 ("Opus (가장 똑똑한 모델)"). Step 5 제안 형식·인터뷰 가이드 동기화
+- metaphor-guide.md → **용어 가이드**로 재정의: 공식 용어는 그대로 + 설명 병기, 내부 구현(TeamCreate/SendMessage/파일 경로)만 비노출, 사용자가 물어보면 솔직히 설명
+- MCP·subagent도 공식 용어로 노출 (설명 병기)
+
 ## [0.20.0] - 2026-06-10
 
 ### Added — Substrate-Aware Orchestration (메이저 개편)
