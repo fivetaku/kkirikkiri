@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.21.3] - 2026-06-19
+
+### Changed — 외부 CLI provider 정비: gemini 제거 + gajae-code(`gjc`) 추가
+
+`PROVIDER_BINARIES`를 `{ codex, antigravity, gjc }`로 정비. Gemini CLI는 지원 종료로 호출 경로 제거, 멀티모델 코딩 CLI인 gajae-code(`gjc`)를 새 provider로 추가했다.
+
+**Removed — Gemini CLI**
+- `run-cli-job.js`: `PROVIDER_BINARIES`에서 `gemini` 제거. `--provider gemini`는 `unsupported provider`로 거부됨 (검증: `check gemini` exit 1)
+- `run-cli-worker.js`: `provider === 'gemini'` 분기(`gemini --yolo -m gemini-2.5-pro`) 삭제. 디자인/UI 외주는 Gemini CLI 후계인 Antigravity CLI(`agy`)로 단일화
+
+**Added — gajae-code(`gjc`)**
+- `run-cli-job.js`: `PROVIDER_BINARIES`에 `gjc: 'gjc'` 추가
+- `run-cli-worker.js`: `provider === 'gjc'` 분기 추가 — `gjc --print "<프롬프트 내용>"` (agy처럼 프롬프트를 마지막 positional로 전달). 모델은 gjc 기본값
+- `check-env.js` / `check-env.sh`: gjc 설치 감지 블록 추가 (멀티 모델 선택 조건)
+- `SKILL.md`: 환경 스캔·역할 배정·역할 표·명명 표·§6-5 provider 목록에 gjc 노출 → 코드 구현·분석 + cross-model 검토 역할로 배정 가능
+- 실측 검증: `--provider gjc` end-to-end 잡 `done`(exit 0), 출력 `KKIRI_GJC_OK` 정상 캡처. 비-TTY 파이프 stdout 정상 (agy stdout 누락 버그 없음)
+
 ## [0.20.2] - 2026-06-11
 
 ### Changed — Workflow 모델 선택 기준 명문화 (Step 4-W)

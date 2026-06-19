@@ -2,7 +2,7 @@
 /**
  * run-cli-worker.js — Detached CLI worker (council-job-worker.js pattern)
  *
- * Spawns a single Codex/Gemini CLI process, captures output,
+ * Spawns a single Codex/Antigravity(agy) CLI process, captures output,
  * and writes atomic status updates.
  */
 const fs = require('fs');
@@ -77,18 +77,24 @@ function main() {
   if (provider === 'codex') {
     program = 'codex';
     args = ['--full-auto', '--quiet', '-m', 'o3', promptFile];
-  } else if (provider === 'gemini') {
-    program = 'gemini';
-    args = ['--yolo', '-m', 'gemini-2.5-pro', promptFile];
   } else if (provider === 'antigravity') {
     // Google Antigravity CLI (바이너리: `agy`) — Gemini CLI 후계 (2026-06-18 개인/Pro/Ultra 전환).
     // 원샷 헤드리스 호출: `agy -p "<프롬프트>"`, 자동승인: --dangerously-skip-permissions.
-    // 주의 1) -p는 프롬프트 "문자열"을 받는다 → codex/gemini처럼 파일 경로가 아니라 내용을 전달.
+    // 주의 1) -p는 프롬프트 "문자열"을 받는다 → codex처럼 파일 경로가 아니라 내용을 전달.
     // 주의 2) 모델 플래그(-m/--model)는 헤드리스에서 미지원/고정(Gemini 3.x)으로 보고됨 → 생략.
     // 주의 3) agy 1.0.x는 비-TTY(파이프)에서 stdout 출력 누락 버그가 있어 output.txt가 비어있을 수 있다.
     const promptContent = fs.readFileSync(promptFile, 'utf8');
     program = 'agy';
     args = ['--dangerously-skip-permissions', '-p', promptContent];
+  } else if (provider === 'gjc') {
+    // gajae-code (Yeachan-Heo/gajae-code) — 멀티모델 코딩 CLI.
+    // 비대화형 원샷: `gjc --print "<프롬프트>"`. antigravity처럼 프롬프트는 파일 경로가 아니라
+    // "내용 문자열"을 마지막 positional(MESSAGE)로 전달한다.
+    // 실측(2026-06-19): 비-TTY 파이프에서도 stdout 정상 출력 — agy의 stdout 누락 버그 없음.
+    // 모델은 gjc 기본값 사용(필요 시 `--model opus` 등으로 핀 가능).
+    const promptContent = fs.readFileSync(promptFile, 'utf8');
+    program = 'gjc';
+    args = ['--print', promptContent];
   } else {
     atomicWriteJson(statusPath, {
       provider,

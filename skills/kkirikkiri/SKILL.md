@@ -180,6 +180,7 @@ grep -q "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" ~/.claude/settings.json 2>/dev/nu
 # 2. 외부 AI CLI 확인
 command -v codex >/dev/null 2>&1 && codex --version       # 코드·대규모 분석 (생산 + 1순위 검토자)
 command -v agy >/dev/null 2>&1 && agy --version           # Antigravity CLI — 디자인/UI (Gemini CLI 대체본)
+command -v gjc >/dev/null 2>&1 && gjc --version           # gajae-code — 코드 구현·분석 + cross-model 검토 (멀티모델)
 
 # 3. 개발 도구 확인
 command -v gh >/dev/null 2>&1    # GitHub CLI
@@ -204,6 +205,7 @@ ls ~/.claude/agents/*.md 2>/dev/null | xargs grep -l "^vibe:" 2>/dev/null | wc -
 - workflows_available: true/false (Claude Code 버전 ≥ 2.1.154)
 - codex_cli: true/false (경로, 버전) — 코드·대규모 분석
 - antigravity_cli: true/false (바이너리 `agy`, Gemini CLI 대체본) — 디자인/UI
+- gjc_cli: true/false (바이너리 `gjc`, gajae-code 멀티모델) — 코드 구현·분석 + cross-model 검토
 - gh_cli: true/false
 - package_manager: npm/bun/pnpm
 - existing_agents: [파일 목록]
@@ -408,6 +410,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 3. **환경 스캔으로 조정**:
    - Codex CLI 있음 → 코드·대규모 분석 생산 또는 검증(Critic) 역할에 배정 (cross-model 1순위 검토자)
    - Antigravity CLI(`agy`) 있음 → 디자인/UI(Designer) 역할에 배정 (Gemini CLI 대체본)
+   - gajae-code(`gjc`) 있음 → 코드 구현·분석 또는 검증(Critic) 역할에 배정 (cross-model 검토자, 멀티모델)
    - Perplexity MCP 있음 → Researcher 팀원에게 도구로 배정
    - gh CLI 있음 → Builder 팀원에게 PR 관리 가능 알림
 
@@ -471,6 +474,7 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 | 기계적 글루 (파일 수집·포맷·추출·진행요약·더미데이터) | **Haiku** | 판단 0인 일만. 판단 필요한 순간 금지 |
 | 코드·대규모 분석 (생산 + 검토) | **Codex CLI** | 다른 base 모델. 없으면 Opus 폴백 |
 | 디자인/UI | **Antigravity CLI(`agy`)** | Gemini CLI 대체본. 없으면 Sonnet 폴백 |
+| 코드 구현·분석 + 교차검토 (멀티모델) | **gajae-code(`gjc`)** | 다른 base 모델. 없으면 Codex/Opus 폴백 |
 
 **검토자 폴백 체인 (build와 다른 family 원칙):**
 1. Codex 있음 → **Codex** (cross-model, 최선)
@@ -620,6 +624,7 @@ Workflow를 구성했어요. 실행 승인 창이 뜨면 내용을 확인하고 
 | Haiku | "경량·고속 모델" — 기계적 잡일 한정 (포맷·수집·추출) |
 | Codex CLI | "OpenAI 코드·대규모 분석 도구" |
 | Antigravity CLI(agy) | "디자인/UI 도구" (Gemini CLI 후속) |
+| gajae-code(gjc) | "멀티모델 코드·교차검토 도구" |
 | Agent Teams | "실시간 협업 팀" |
 | Workflow | "대량 자동 병렬 처리" |
 
@@ -1017,8 +1022,8 @@ Task({
 ### 6-5. 외부 CLI 실행 (Codex/Antigravity)
 
 외부 CLI가 배정된 역할이 있으면, 팀장에게 다음 지시를 포함한다.
-`--provider`는 `codex`(코드·대규모 분석) | `antigravity`(디자인/UI) 중 환경 스캔에서 설치 확인된 것을 사용한다
-(antigravity의 실제 바이너리는 `agy`이며 Gemini CLI 대체본이다. `--provider gemini`는 사용하지 않는다).
+`--provider`는 `codex`(코드·대규모 분석) | `antigravity`(디자인/UI) | `gjc`(코드 구현·분석 + 교차검토, 멀티모델) 중 환경 스캔에서 설치 확인된 것을 사용한다
+(antigravity의 실제 바이너리는 `agy`이며 Gemini CLI 후계다. gemini CLI는 지원 중단되어 provider에서 제거됨 — `--provider gemini`는 더 이상 동작하지 않는다).
 
 **검토 역할일 때는 적대적 프롬프트로:** 프롬프트 파일에 "검토해줘"가 아니라 **"다음 산출물의 결함을 찾아 반박하라(refute)"**로 쓴다. build와 다른 family가 검토하는 것이 원칙 — Sonnet/Opus가 만든 것은 Codex가 검토.
 

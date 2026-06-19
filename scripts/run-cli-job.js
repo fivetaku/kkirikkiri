@@ -3,13 +3,13 @@
  * run-cli-job.js — 끼리끼리 외부 CLI 오케스트레이터
  *
  * Subcommands:
- *   start  --provider codex|gemini --prompt-file path [--timeout N] [--jobs-dir path] [--json]
+ *   start  --provider codex|antigravity|gjc --prompt-file path [--timeout N] [--jobs-dir path] [--json]
  *   status [--text] JOB_DIR
  *   wait   [--timeout-ms N] [--interval-ms N] JOB_DIR
  *   results [--json] JOB_DIR
  *   stop   JOB_DIR
  *   clean  JOB_DIR
- *   check  codex|gemini
+ *   check  codex|antigravity|gjc
  */
 const fs = require('fs');
 const path = require('path');
@@ -20,8 +20,9 @@ const SCRIPT_DIR = __dirname;
 const WORKER_PATH = path.join(SCRIPT_DIR, 'run-cli-worker.js');
 const JOBS_DIR_DEFAULT = path.join(SCRIPT_DIR, '..', '.jobs');
 
-// provider → 실제 실행 바이너리 이름. antigravity의 바이너리는 `agy`다.
-const PROVIDER_BINARIES = { codex: 'codex', gemini: 'gemini', antigravity: 'agy' };
+// provider → 실제 실행 바이너리 이름. antigravity의 바이너리는 `agy`, gjc는 gajae-code(Yeachan-Heo/gajae-code).
+// gemini CLI는 지원 중단(deprecated) — agy(Antigravity, Gemini CLI 후계)로 단일화.
+const PROVIDER_BINARIES = { codex: 'codex', antigravity: 'agy', gjc: 'gjc' };
 const SUPPORTED_PROVIDERS = Object.keys(PROVIDER_BINARIES);
 
 function killProcess(pid) {
@@ -100,13 +101,13 @@ function printHelp() {
   process.stdout.write(`run-cli-job.js — 끼리끼리 외부 CLI 러너
 
 Usage:
-  run-cli.sh start --provider codex|gemini|antigravity --prompt-file path [--timeout N] [--json]
+  run-cli.sh start --provider codex|antigravity|gjc --prompt-file path [--timeout N] [--json]
   run-cli.sh status [--text] <JOB_DIR>
   run-cli.sh wait [--timeout-ms N] [--interval-ms N] <JOB_DIR>
   run-cli.sh results [--json] <JOB_DIR>
   run-cli.sh stop <JOB_DIR>
   run-cli.sh clean <JOB_DIR>
-  run-cli.sh check codex|gemini|antigravity
+  run-cli.sh check codex|antigravity|gjc
 `);
 }
 
@@ -127,7 +128,7 @@ function cmdStart(options) {
   const timeout = options.timeout ? Number(options.timeout) : 600;
   const jobsDir = options['jobs-dir'] || JOBS_DIR_DEFAULT;
 
-  if (!provider) exitWithError('start: missing --provider (codex, gemini, or antigravity)');
+  if (!provider) exitWithError('start: missing --provider (codex, antigravity, or gjc)');
   if (!promptFile) exitWithError('start: missing --prompt-file');
   if (!SUPPORTED_PROVIDERS.includes(provider)) {
     exitWithError(`start: unsupported provider "${provider}" (use ${SUPPORTED_PROVIDERS.join(', ')})`);

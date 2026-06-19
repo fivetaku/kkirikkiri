@@ -113,6 +113,12 @@ else
   warn "Antigravity CLI(agy) 미설치 — curl -fsSL https://antigravity.google/cli/install.sh | bash (없어도 동작)"
 fi
 
+if command -v gjc &>/dev/null; then
+  pass "gajae-code(gjc) 설치됨 — 코드 구현·분석 + cross-model 검토 활용 가능 (멀티모델)"
+else
+  warn "gajae-code(gjc) 미설치 — https://github.com/Yeachan-Heo/gajae-code (없어도 동작)"
+fi
+
 if command -v gh &>/dev/null; then
   pass "GitHub CLI 설치됨 — PR 관리 활용 가능"
 else
