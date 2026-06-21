@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.21.5 — 2026-06-21
+
+- GitHub star is now **opt-in** — on first run the command asks once via AskUserQuestion (`네, ⭐ 눌러주기` / `아니요`) instead of auto-starring. The star logic moved into `setup.sh` and records the choice (`~/.gptaku-setup/<plugin>.star.json`) so it never re-asks. `setup.sh` no longer stars anything automatically.
+
 ## [0.21.3] - 2026-06-19
 
 ### Changed — 외부 CLI provider 정비: gemini 제거 + gajae-code(`gjc`) 추가
