@@ -126,7 +126,7 @@ Claude + Codex CLI(코드·대규모 분석, cross-model 검토) + Antigravity C
 
 | 프리셋 | 추천 에이전트 예시 |
 |--------|-----------------|
-| 리서치 | deep-research, data-analyst |
+| 리서치 | insane-research, data-analyst |
 | 개발 | code-reviewer, architect |
 | 분석 | code-analyzer, security-reviewer |
 | 콘텐츠 | writer, translator |

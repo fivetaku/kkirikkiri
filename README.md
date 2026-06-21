@@ -126,7 +126,7 @@ If `.claude/agents/` contains agent definitions, kkirikkiri detects them and rec
 
 | Preset | Example agents |
 |--------|---------------|
-| Research | deep-research, data-analyst |
+| Research | insane-research, data-analyst |
 | Development | code-reviewer, architect |
 | Analysis | code-analyzer, security-reviewer |
 | Content | writer, translator |
