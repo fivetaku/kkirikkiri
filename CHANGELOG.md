@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.21.7 — 2026-06-29
+
+Gemini CLI 흔적 완전 제거 — agy(Antigravity)로 단일화 마무리.
+
+- provider는 이미 `codex` / `antigravity`(바이너리 `agy`) / `gjc`로 단일화돼 있었다(`--provider gemini`는 미동작). 이번에 스킬·스크립트·README에 남아 있던 "Gemini CLI 대체본/후계" 등 **잔여 Gemini 언급을 모두 제거**했다. provider 매핑·실행 로직 변화 없음(주석·상태 메시지·문서 정리). CHANGELOG/REDESIGN 등 과거 기록은 보존.
+
 ## 0.21.5 — 2026-06-21
 
 - The GitHub-star prompt is shown in the user's current language; on a fresh session with no language signal yet, it falls back to the language detected from your recent Claude sessions (else English).

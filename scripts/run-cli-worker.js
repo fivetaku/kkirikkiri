@@ -78,10 +78,10 @@ function main() {
     program = 'codex';
     args = ['--full-auto', '--quiet', '-m', 'o3', promptFile];
   } else if (provider === 'antigravity') {
-    // Google Antigravity CLI (바이너리: `agy`) — Gemini CLI 후계 (2026-06-18 개인/Pro/Ultra 전환).
+    // Google Antigravity CLI (바이너리: `agy`) (2026-06-18 개인/Pro/Ultra 전환).
     // 원샷 헤드리스 호출: `agy -p "<프롬프트>"`, 자동승인: --dangerously-skip-permissions.
     // 주의 1) -p는 프롬프트 "문자열"을 받는다 → codex처럼 파일 경로가 아니라 내용을 전달.
-    // 주의 2) 모델 플래그(-m/--model)는 헤드리스에서 미지원/고정(Gemini 3.x)으로 보고됨 → 생략.
+    // 주의 2) 모델 플래그(-m/--model)는 헤드리스에서 미지원/고정(고정 모델)으로 보고됨 → 생략.
     // 주의 3) agy 1.0.x는 비-TTY(파이프)에서 stdout 출력 누락 버그가 있어 output.txt가 비어있을 수 있다.
     const promptContent = fs.readFileSync(promptFile, 'utf8');
     program = 'agy';

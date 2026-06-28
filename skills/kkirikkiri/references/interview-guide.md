@@ -64,7 +64,7 @@ AskUserQuestion 호출 시 규칙:
 ```
 1. 외부 AI CLI 확인
    - Bash: command -v codex → 코드 리뷰/분석 + 대규모 분석 역할에 활용
-   - Bash: command -v agy → 디자인/UI에 활용 (Antigravity CLI — Gemini CLI 대체본)
+   - Bash: command -v agy → 디자인/UI에 활용 (Antigravity CLI)
 
 2. MCP 서버 확인
    - Perplexity → 리서치 팀원에게 웹 검색 도구 배정

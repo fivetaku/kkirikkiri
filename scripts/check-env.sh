@@ -108,7 +108,7 @@ else
 fi
 
 if command -v agy &>/dev/null; then
-  pass "Antigravity CLI(agy) 설치됨 — 디자인/UI 역할 활용 가능 (Gemini CLI 대체본)"
+  pass "Antigravity CLI(agy) 설치됨 — 디자인/UI 역할 활용 가능"
 else
   warn "Antigravity CLI(agy) 미설치 — curl -fsSL https://antigravity.google/cli/install.sh | bash (없어도 동작)"
 fi

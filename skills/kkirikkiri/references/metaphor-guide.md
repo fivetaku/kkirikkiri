@@ -14,7 +14,7 @@
 | Sonnet | "균형형 모델" | 일반 워커 (리서치·드래프트·간단 구현) — 기본값 |
 | Haiku | "경량·고속 모델" | 기계적 잡일 한정 (수집·포맷·추출) |
 | Codex CLI | "OpenAI 코드·대규모 분석 도구" | 코드 분석/리뷰 + 대규모 분석. cross-model 검토 1순위 |
-| Antigravity CLI(agy) | "디자인/UI 도구" | 디자인/UI (Gemini CLI 후속 — Gemini는 언급하지 않음) |
+| Antigravity CLI(agy) | "디자인/UI 도구" | 디자인/UI |
 
 ### 예시
 

@@ -21,7 +21,7 @@ const WORKER_PATH = path.join(SCRIPT_DIR, 'run-cli-worker.js');
 const JOBS_DIR_DEFAULT = path.join(SCRIPT_DIR, '..', '.jobs');
 
 // provider → 실제 실행 바이너리 이름. antigravity의 바이너리는 `agy`, gjc는 gajae-code(Yeachan-Heo/gajae-code).
-// gemini CLI는 지원 중단(deprecated) — agy(Antigravity, Gemini CLI 후계)로 단일화.
+// provider는 agy(Antigravity)·codex·gjc로 단일화.
 const PROVIDER_BINARIES = { codex: 'codex', antigravity: 'agy', gjc: 'gjc' };
 const SUPPORTED_PROVIDERS = Object.keys(PROVIDER_BINARIES);
 
