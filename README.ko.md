@@ -1,6 +1,10 @@
-[English](README.md) | 한국어
+[English](README.md) | 한국어 | [中文](README.zh.md) | [日本語](README.ja.md) | [Español](README.es.md)
 
 # kkirikkiri (끼리끼리)
+
+<p align="center">
+  <img src="assets/kkirikkiri-hero-01.png" alt="kkirikkiri" width="320">
+</p>
 
 > **한마디면 충분. AI 에이전트 팀이 알아서 모인다.**
 

@@ -1,6 +1,10 @@
-English | [한국어](README.ko.md)
+English | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](README.ja.md) | [Español](README.es.md)
 
 # kkirikkiri (끼리끼리)
+
+<p align="center">
+  <img src="assets/kkirikkiri-hero-01.png" alt="kkirikkiri" width="320">
+</p>
 
 > **One sentence. A team of AI agents, assembled and running.**
 
