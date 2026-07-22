@@ -673,7 +673,7 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 ```
 
 **응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
-- "네, 시작해주세요" → 즉시 Step 6-1의 team_name 생성 + KKIRIKKIRI_DIR 정의 + TeamCreate 호출로 진행
+- "네, 시작해주세요" → 즉시 Step 6-1의 team_name 생성 + KKIRIKKIRI_DIR 정의 + 세션 디렉토리 생성으로 진행 (팀은 Step 6-4 첫 팀원 스폰 시 자동 형성 — 별도 생성 호출 없음)
 - "조정하고 싶어요" → 어떤 부분을 바꿀지 추가 AskUserQuestion 호출 후 Step 4 재실행
 - "처음부터 다시" → Step 1로 복귀, presets 재매칭부터 시작
 
@@ -681,9 +681,9 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 > ```
 > Bash("RAND4=$(openssl rand -hex 2 2>/dev/null || printf '%04x' $((RANDOM % 65536))); echo kkirikkiri-{preset}-$(date +%Y%m%d-%H%M)-${RAND4}")
 > Bash("mkdir -p {KKIRIKKIRI_DIR}/{agents,prompts,agent-cache,archive} && mkdir -p {프로젝트루트}/.kkirikkiri/shared/saved-teams")
-> TeamCreate({ team_name: "{team_name}", description: "[팀 목표 요약]" })
 > ```
-> 이 박스가 Step 5→6 경계의 도구 호출 앵커다. AskUserQuestion 응답만 받고 다음 도구 호출 없이 멈추면 안 된다.
+> 이 두 Bash 호출이 Step 5→6 경계의 도구 호출 앵커다. AskUserQuestion 응답만 받고 다음 도구 호출 없이 멈추면 안 된다.
+> (팀은 별도 생성 호출 없이 Step 6-4에서 첫 팀원을 Task로 스폰하는 순간 자동 형성된다 — Claude Code v2.1.178+ 에서 `TeamCreate` 도구가 제거됨.)
 
 ---
 
@@ -777,14 +777,9 @@ mkdir -p {KKIRIKKIRI_DIR}/{agents,prompts,agent-cache,archive}
 mkdir -p {프로젝트루트}/.kkirikkiri/shared/saved-teams
 ```
 
-#### TeamCreate 호출
+#### 팀 형성 (별도 생성 호출 없음)
 
-```
-TeamCreate({
-  team_name: "{team_name}",
-  description: "[팀 목표 요약]"
-})
-```
+Claude Code v2.1.178+ 에서 `TeamCreate` / `TeamDelete` 도구는 제거되었다. 팀은 별도 setup 단계 없이 **Step 6-4에서 첫 팀원을 Task로 스폰하는 순간 자동 형성**된다. 여기서 만든 `team_name`은 kkirikkiri 자체 디렉토리 핸들({KKIRIKKIRI_DIR})용이며, Claude Code 내부 팀 이름은 세션 ID에서 파생된다 (Task 도구의 `team_name` 입력은 현재 무시됨).
 
 team_name 예시: `kkirikkiri-research-20260503-1430-a3f2`
 
@@ -1083,7 +1078,7 @@ Workflow({ script: "<Step 4-W에서 작성한 스크립트 전체>" })
   Workflow가 백그라운드에서 돌기 시작했어요. /workflows 를 입력하면 진행 상황을 볼 수 있어요.
   완료되면 결과를 정리해서 보여드릴게요.
   ```
-- TeamCreate·공유 메모리·도메인 카드 등 Agent Teams 인프라는 일절 만들지 않는다.
+- 팀 스폰·공유 메모리·도메인 카드 등 Agent Teams 인프라는 일절 만들지 않는다.
 - 완료 알림이 오면 → Step 8-W로.
 
 ### 6-W 에러 처리
@@ -1172,7 +1167,7 @@ ELIF 라운드 >= 3:
 
 **응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
 - "네, 보강해주세요" → 즉시 Step 7-6의 EXECUTE NOW Read 박스 실행 후 방식 A/B/C 선택
-- "이 정도면 괜찮아요" → 즉시 Step 8-1로 진행 (TeamDelete 호출)
+- "이 정도면 괜찮아요" → 즉시 Step 8-1로 진행 (팀원 shutdown 요청)
 - "처음부터 다시" → Step 1로 복귀
 
 ### 7-6. 2라운드 실행 방식 (3가지)
@@ -1218,8 +1213,8 @@ SendMessage({
   content: "작업이 완료되었습니다. 수고하셨습니다."
 })
 
-# 팀 리소스 정리
-TeamDelete()
+# 팀 리소스 정리 — Claude Code v2.1.178+ 에서 TeamDelete 도구는 제거됨.
+# 팀 디렉토리는 세션 종료 시 자동 정리된다 (별도 호출 불필요).
 ```
 
 ### 8-2. 유저에게 결과 전달 + Auto-memory 유도
@@ -1318,7 +1313,7 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 
 ### Step 8-W: Workflow 결과 리포트
 
-> **Workflow 경로 전용.** TeamDelete·공유 메모리 정리 불필요.
+> **Workflow 경로 전용.** 팀 정리·공유 메모리 정리 불필요.
 
 1. 워크플로우 반환값을 8-2와 같은 형식으로 리포트한다 (팀 구성 → "처리 규모(에이전트 수·스테이지)"로 대체):
    ```
@@ -1385,7 +1380,7 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 - [ ] 인터뷰 질문 4개 이상 하지 마
 - [ ] Haiku를 판단이 필요한 역할에 배정하지 마 — 기계적 글루(수집·포맷·추출) 한정
 - [ ] 같은 family끼리의 형식적 검토를 기본으로 삼지 마 — 검토는 Codex→agy→Opus 적대 인스턴스 순. 폴백일 땐 반드시 refute 프롬프트
-- [ ] Workflow 경로에서 TeamCreate·공유 메모리·도메인 카드를 만들지 마
+- [ ] Workflow 경로에서 팀 스폰·공유 메모리·도메인 카드를 만들지 마
 - [ ] 팀장에게 코드 작성을 시키지 마
 - [ ] 에러 메시지를 그대로 보여주지 마
 - [ ] 공유 메모리 파일 초기화 없이 팀을 실행하지 마

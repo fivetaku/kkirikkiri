@@ -35,8 +35,8 @@ SendMessage({
 기존 팀 종료:
 ```
 SendMessage({ type: "shutdown_request", recipient: "[각 팀원]" })
-TeamDelete()
 ```
+각 팀원에게 shutdown_request를 보내 해산한다. Claude Code v2.1.178+ 에서 `TeamDelete` 도구는 제거됐고, 팀 디렉토리는 세션 종료 시 자동 정리된다.
 
 새 팀 생성 시 반드시 반영:
 - **TEAM_FINDINGS.md + DEAD_ENDS** 내용을 새 팀에 전달
