@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.21.8 — 2026-07-22
+
+Claude Code v2.1.178+ 호환 — 제거된 `TeamCreate` / `TeamDelete` 도구 참조 정리.
+
+- Claude Code v2.1.178에서 `TeamCreate` / `TeamDelete` 도구가 제거됐다(팀원 스폰 시 팀이 자동 형성되고, 세션 종료 시 자동 정리). 스킬 본문이 이 두 도구를 실제 호출·앵커로 사용하고 있어 최신 런타임에서 어긋났다.
+- `SKILL.md`: Step 5→6 경계의 실행 앵커에서 `TeamCreate({...})` 호출 제거 — 앵커는 team_name 생성 + 디렉토리 `mkdir` 두 Bash 호출로 유지, 팀은 Step 6-4 첫 팀원 스폰 시 자동 형성. Step 6-1 "TeamCreate 호출" 절을 "팀 형성(별도 생성 호출 없음)"으로 교체. Step 8-1 팀 종료에서 `TeamDelete()` 제거(shutdown_request는 유지, 정리는 세션 종료 시 자동). Workflow 경로 가드·7-5 흐름 설명의 잔여 참조 정리.
+- `references/validation-guide.md`: 방식 B(팀 해산)의 `TeamDelete()` 제거 — 팀원별 shutdown_request로 해산.
+- `commands/kkirikkiri.md`: `allowed-tools`에서 `TeamCreate` / `TeamDelete` 제거. `team_name`(kkirikkiri 자체 디렉토리 핸들)과 `TaskCreate/TaskUpdate/TaskList/TaskGet`는 제거 근거가 없어 유지.
+
 ## 0.21.7 — 2026-06-29
 
 Gemini CLI 흔적 완전 제거 — agy(Antigravity)로 단일화 마무리.
