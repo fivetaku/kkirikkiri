@@ -174,6 +174,7 @@ Claude + Codex CLI(코드·대규모 분석, cross-model 검토) + Antigravity C
 ```bash
 npm install -g @openai/codex                                    # Codex CLI (코드·대규모 분석, cross-model 검토)
 curl -fsSL https://antigravity.google/cli/install.sh | bash     # Antigravity CLI agy (디자인/UI)
+curl -fsSL https://x.ai/cli/install.sh | bash                  # Grok CLI (코드·긴 컨텍스트 교차 검토)
 ```
 
 없어도 동작합니다. Claude만으로 팀을 구성합니다.

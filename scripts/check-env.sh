@@ -113,6 +113,19 @@ else
   warn "Antigravity CLI(agy) 미설치 — curl -fsSL https://antigravity.google/cli/install.sh | bash (없어도 동작)"
 fi
 
+# grok은 ~/.grok/bin에 설치되고 셸 프로필로만 PATH에 오른다 → 비대화형 셸 오탐 방지 폴백.
+# ⚠️ 이름 충돌: npm 서드파티 @vibe-kit/grok-cli도 `grok`을 설치한다(실측 2026-08-23, v1.0.1).
+#    ~/.grok/bin을 PATH 앞에 두는 순서가 공식 xAI CLI를 이기게 한다.
+if [ -d "$HOME/.grok/bin" ]; then
+  PATH="$HOME/.grok/bin:$PATH"
+fi
+
+if command -v grok &>/dev/null; then
+  pass "Grok CLI(grok) 설치됨 — 코드·대규모 분석 + cross-model 검토 활용 가능"
+else
+  warn "Grok CLI(grok) 미설치 — curl -fsSL https://x.ai/cli/install.sh | bash (없어도 동작)"
+fi
+
 if command -v gjc &>/dev/null; then
   pass "gajae-code(gjc) 설치됨 — 코드 구현·분석 + cross-model 검토 활용 가능 (멀티모델)"
 else

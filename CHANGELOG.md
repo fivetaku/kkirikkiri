@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.22.0 — 2026-08-23
+
+- **Grok CLI(`grok`) 프로바이더 추가.** xAI Grok Build를 네 번째 외주 워커로 등록했다. `--provider grok`으로 호출한다.
+  - `run-cli-worker.js`에 grok 분기 추가 — `grok --no-auto-update --no-alt-screen --sandbox workspace --always-approve -p "<프롬프트>"`.
+  - **샌드박스가 기본 off**라(codex와 반대) `--sandbox workspace`로 조인다. 자동 업데이터가 실행 중 끼어들지 않도록 `--no-auto-update` 필수.
+  - 모델 오버라이드: `KKIRIKKIRI_GROK_MODEL` (기존 `KKIRIKKIRI_CODEX_MODEL` 패턴과 동일).
+  - 실측(2026-08-23, grok 1.0.4): 비-TTY 파이프에서 stdout 정상 — agy의 stdout 누락 버그 없음.
+- **[P1] PATH 오탐 수정.** grok은 `~/.grok/bin`에 설치되고 셸 프로필을 통해서만 PATH에 오르므로, 비대화형 셸(훅·CI·detached 워커)에서 `which`가 실패해 "미설치"로 오판하거나 spawn이 ENOENT로 죽었다. `run-cli-job.js`·`run-cli-worker.js`·`check-env.js` 3곳에 알려진 설치 경로를 PATH 앞에 덧대는 폴백을 넣었다.
+  - ⚠️ 이름 충돌: npm의 서드파티 `@vibe-kit/grok-cli`도 `grok` 바이너리를 설치한다(실측: `/opt/homebrew/bin/grok` v1.0.1). 그쪽은 위 플래그를 모른다. `~/.grok/bin`을 PATH **앞**에 두는 순서가 공식 xAI CLI를 결정적으로 이기게 하는 장치다.
+- **실행형태(Execution Shapes) 5종 도입 — Workflow 경로 전용.** 기존에는 병렬 하나뿐이었다.
+  - 신규 `references/execution-shapes.md` — 병렬 / 직렬 / 체인(플랜 뒤에 플랜) / 부모와 자식 / 토너먼트의 정의와 스크립트 골격.
+  - 신규 **Step 3.6(실행형태 선택)** — Workflow를 고른 뒤, 순서·의존 또는 경쟁·품질 신호가 있을 때만 1문항으로 되묻는다. 신호가 없으면 묻지 않고 병렬(기본값)로 간다.
+  - Step 4-W 진입 시 `execution-shapes.md`를 lazy-read. 기존 규칙(모델 핀 필수 / adversarial-verify 필수 / schema 강제)은 5종 전부에 그대로 적용된다.
+  - Agent Teams 경로에는 적용하지 않는다 — 영속 팀·공유메모리 구조라 워크트리 격리가 불가능하고 채점 노드가 Ralph 루프와 겹친다.
+- **토너먼트(옵트인 실험).** 같은 과제를 여러 워커에게 시키고 게이트로 채점해 승자를 채택한다. 참가자별 git worktree 격리, 게이트 통과 수 → diffSize 순의 결정론 순위, 게이트가 비면 실행 거부.
+  - 🔴 **실측 판정(2026-08-23): 단독 대비 품질 이득 없음.** codex vs grok A/B 2라운드(parseDuration 15케이스 / parseCSV RFC4180 20케이스)에서 양 참가자가 게이트를 전부 통과해 통과율 차이가 0이었고 CLI 호출만 2배 들었다. 따라서 **기본값으로 승격하지 않고** 사용자가 명시적으로 고를 때만 도는 실험 기능으로 둔다. `adopt: 'merge'`(패자 장점 이식)는 근거 부족으로 **미구현**. 단 판정은 *테스트가 미리 주어진 잘 명세된 태스크*에 한정된다. 리포트: `docs/reports/tournament-ab-2026-08-23.md`
+  - [P1] **`diffSize` 타이브레이커 결함 2건 수정 (하나는 실기에서만 드러남).** ①`git diff --shortstat`은 untracked 새 파일을 세지 않아 신규 파일 생성(토너먼트의 주 사용처)에서 항상 0 → **항상 동점**. `git add -A -N` 선행으로 교정. ②`--jobs-dir`가 워크트리 안을 가리켜 job.json·output.txt·error.txt가 diff에 섞였다 — 실측: codex의 stderr 779줄이 실제 코드 46줄을 덮어 diffSize가 858로 잡혔고 타이브레이커가 코드가 아니라 **로그 잡음으로 승자를 갈랐다**. jobs-dir를 워크트리 바깥으로 옮기고 측정을 소스 경로(`-- src lib app`)로 좁혔다.
+- **역할 라우팅**: `presets.md`에 grok 슬롯 추가. 검토는 build와 다른 family 원칙에 따라 `Codex → grok → agy → Opus` 순으로 확장 — codex가 build면 검토는 grok이 맡는다.
+
+- **[P2] Step 3.6 신호 표 결함 2건 수정 (라우팅 시험에서 발견).** ①신호 예시가 `"먼저 ~한 다음"` 같은 **틸드 문형 템플릿**이라 실제 어형과 매칭되지 않았다 — "스키마 **먼저** 잡고 **그 다음** API"처럼 명백한 순서 요청이 신호로 안 잡혔다. 문형이 아니라 낱말(`먼저`/`그 다음`/`이후에`/`끝나고`/`결과로`/`순서대로`/`단계`) 목록으로 교체. ②명사형 `"경쟁"`이 **"경쟁사 5곳 조사해줘"** 를 오탐해 불필요한 되묻기를 유발했다 — 조사 *대상*이지 실행 *방식*이 아니다. 동사형(`경쟁시켜`/`대결`/`붙여서`)으로 좁히고 "낱말이 작업 방식을 가리킬 때만 신호" 규칙을 명시했다.
+- **회귀 테스트 추가** — `tests/test-step36-routing.sh` (15 assertions). SKILL.md의 신호 표를 **문서에서 직접 읽어** 12개 시나리오를 라우팅한다(하드코딩 아님 — 표를 고치면 테스트가 따라간다). 과소 탐지(신호 누락)와 과잉 탐지(오탐으로 불필요한 질문) 양방향을 잡는다. 변이 테스트로 검출력 확인(신호 축소 → 3건, 명사형 복귀 → 3건 검출).
+- **회귀 테스트 추가** — `tests/test-provider-args.sh` (23 assertions). 가짜 바이너리로 argv를 포착해 프로바이더별 플래그 계약을 고정한다. 실제 CLI를 호출하지 않아 CI에서 돌릴 수 있다. 변이 테스트로 검출력 확인(`--sandbox workspace` 제거 / 모델 오버라이드 무력화 → 각각 실패 검출).
 ## 0.21.7 — 2026-06-29
 
 Gemini CLI 흔적 완전 제거 — agy(Antigravity)로 단일화 마무리.

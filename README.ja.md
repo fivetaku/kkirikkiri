@@ -174,6 +174,7 @@ Claude + Codex CLI（コード・大規模分析、クロスモデルレビュ�
 ```bash
 npm install -g @openai/codex                                    # Codex CLI — code & large-scale analysis, cross-model review
 curl -fsSL https://antigravity.google/cli/install.sh | bash     # Antigravity CLI (agy) — design/UI
+curl -fsSL https://x.ai/cli/install.sh | bash                  # Grok CLI (コード・長文コンテキスト相互レビュー)
 ```
 
 これらがなくても動きます。Claude が単独でチーム全体をこなします。

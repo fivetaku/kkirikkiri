@@ -10,6 +10,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execFileSync } = require('child_process');
 
 const RED = '\x1b[0;31m';
@@ -21,9 +22,29 @@ const WORKFLOWS_MIN_VERSION = [2, 1, 154];
 
 const whichCmd = process.platform === 'win32' ? 'where' : 'which';
 
+// 일부 CLI는 셸 프로필을 통해서만 PATH에 올라가므로, 비대화형 셸(훅·CI)에서 which가 실패해
+// "미설치"로 오탐한다. 알려진 설치 경로를 PATH 앞에 덧대어 그 오탐을 막는다.
+// grok: `curl -fsSL https://x.ai/cli/install.sh | bash` → ~/.grok/bin/grok
+// ⚠️ 이름 충돌: npm의 서드파티 `@vibe-kit/grok-cli`도 `grok` 바이너리를 설치한다(실측 2026-08-23,
+//    /opt/homebrew/bin/grok v1.0.1). ~/.grok/bin을 앞에 두는 순서가 공식 xAI CLI를 이기게 한다.
+const EXTRA_BIN_DIRS = [path.join(os.homedir(), '.grok', 'bin')];
+
+function envWithExtraPaths() {
+  const env = { ...process.env };
+  const existing = EXTRA_BIN_DIRS.filter((d) => {
+    try { return fs.existsSync(d); } catch { return false; }
+  });
+  if (existing.length === 0) return env;
+  const sep = process.platform === 'win32' ? ';' : ':';
+  env.PATH = [...existing, env.PATH || ''].filter(Boolean).join(sep);
+  return env;
+}
+
 function hasCommand(name) {
   try {
-    execFileSync(whichCmd, [name], { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] });
+    execFileSync(whichCmd, [name], {
+      encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'], env: envWithExtraPaths(),
+    });
     return true;
   } catch {
     return false;
@@ -149,6 +170,12 @@ if (hasCommand('gjc')) {
   pass('gajae-code(gjc) 설치됨 — 코드 구현·분석 + cross-model 검토 활용 가능 (멀티모델)');
 } else {
   warn('gajae-code(gjc) 미설치 — https://github.com/Yeachan-Heo/gajae-code (없어도 동작)');
+}
+
+if (hasCommand('grok')) {
+  pass('Grok CLI(grok) 설치됨 — 코드·대규모 분석 + cross-model 검토 활용 가능');
+} else {
+  warn('Grok CLI(grok) 미설치 — curl -fsSL https://x.ai/cli/install.sh | bash (없어도 동작)');
 }
 
 if (hasCommand('gh')) {

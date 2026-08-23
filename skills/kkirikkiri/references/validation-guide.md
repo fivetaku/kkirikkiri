@@ -35,10 +35,11 @@ SendMessage({
 기존 팀 종료:
 ```
 SendMessage({ type: "shutdown_request", recipient: "[각 팀원]" })
-TeamDelete()
 ```
 
-새 팀 생성 시 반드시 반영:
+> 세션당 팀은 하나뿐이고 팀 리소스는 세션 종료 시 자동 정리된다. "새 팀"이란 같은 세션에서 **팀원을 새로 스폰하는 것**이다 — 별도 생성·삭제 호출은 없다.
+
+새 팀원 스폰 시 반드시 반영:
 - **TEAM_FINDINGS.md + DEAD_ENDS** 내용을 새 팀에 전달
 - 부족했던 부분을 새 팀의 태스크에 반영
 - 새 팀 프롬프트에 "Verify-first 5개" 목록 포함 (이전 팀의 미검증 주장)

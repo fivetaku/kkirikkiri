@@ -36,6 +36,7 @@ description: Auto-assembles and runs an AI agent team from one natural-language 
 |----------|-----------|
 | Step 3 진입 | `interview-guide.md` + `metaphor-guide.md` |
 | Step 4 진입 (Agent Teams 경로) | `subagent-synthesis.md` (동적 합성 가이드) + `team-prompts.md` (archetype 7종 마스터) |
+| Step 4-W 진입 (Workflow 경로) | `execution-shapes.md` (실행형태 5종 + 토너먼트) |
 | Step 6 진입 (Agent Teams 경로) | `coordination-protocols.md` (적응형 척추 — Teams 경로 항상 적용) |
 | Step 6-2 진입 | `shared-memory.md` |
 | Step 6-2.5 진입 | `subagent-synthesis.md` (이미 Step 4에서 로드됨, 재참조 시 캐시) |
@@ -66,6 +67,8 @@ Step 2:   환경 스캔 (백그라운드) — 실행 방식 가용성 포함
 Step 3:   인터뷰 (AskUserQuestion)
 Step 3.5: 실행 방식 선택 (AskUserQuestion) — Agent Teams vs Workflow
    ├─ [Agent Teams 경로]                   ├─ [Workflow 경로]
+                                           Step 3.6: 실행형태 선택 (신호 있을 때만)
+                                                     병렬/직렬/체인/부모자식/토너먼트
 Step 4:   동적 팀 구성                      Step 4-W: 워크플로우 스크립트 구성
 Step 5:   팀 구성 제안 + 유저 확인          (확인은 Workflow 승인 카드가 대신)
 Step 6:   팀 생성 + 공유 메모리 + 실행      Step 6-W: Workflow 도구 호출
@@ -74,6 +77,8 @@ Step 8:   결과 수집 + 리포트               Step 8-W: 반환값 리포트
 ```
 
 **substrate 분기 원칙**: Step 3.5에서 사용자가 고른 실행 방식에 따라 두 경로는 **Step 4부터 완전히 분기**한다. Agent Teams = 영속 팀 + 공유메모리 + Ralph 루프, Workflow = 결정론 스크립트 + 스크립트 변수 + 내부 검증 스테이지.
+
+**실행형태는 Workflow 전용**: 병렬(기본)·직렬·체인·부모자식·토너먼트 5종은 Workflow 스크립트의 *모양*이다. Agent Teams는 영속 팀 구조라 워크트리 격리가 안 되고 채점 노드가 Ralph 루프와 겹치므로 적용하지 않는다. 상세: `references/execution-shapes.md`
 
 ### 핵심 운영 원칙
 
@@ -379,7 +384,54 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 **응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
 - "Agent Teams" → 즉시 Step 4(동적 팀 구성)의 EXECUTE NOW Read 박스 실행
-- "Workflow" → 즉시 Step 4-W(워크플로우 스크립트 구성)로 진행
+- "Workflow" → 즉시 **Step 3.6(실행형태 선택)** 으로 진행
+
+---
+
+## Step 3.6: 실행형태 선택 — Workflow 경로 전용
+
+> **Agent Teams는 이 Step을 건너뛴다.** 실행형태는 Workflow 스크립트의 모양이라
+> 영속 팀 구조에는 적용되지 않는다.
+
+대부분의 작업은 기본값(`parallel`)이면 된다. **아래 두 신호 중 하나라도 없으면 묻지 말고
+`parallel`로 진행한다** — 형태 질문은 실제로 갈릴 때만 한다.
+
+| 되묻는 신호 | 실제로 이 말들이 나오면 |
+|---|---|
+| 사용자가 순서·단계·의존을 명시했다 | "먼저", "그 다음", "다음에", "이후에", "끝나고", "결과로", "순서대로", "단계" |
+| 사용자가 경쟁·비교·품질을 명시했다 | "여러 개", "붙여서", "경쟁시켜", "대결", "제일 좋은", "더 나은", "비교해서", "토너먼트" |
+
+> 위는 **부분 문자열**로 본다. 문형 템플릿이 아니라 낱말이다 —
+> "스키마 **먼저** 잡고 **그 다음** API"처럼 예시 문형과 안 맞아도 낱말이 걸리면 신호로 친다.
+>
+> ⚠️ 단, 낱말이 **작업 방식**을 가리킬 때만 신호다. **작업 대상**이면 아니다.
+> "**경쟁사** 5곳 조사해줘"의 '경쟁'은 조사 대상이지 실행 방식이 아니다 → 신호 아님, 병렬로 간다.
+> 그래서 명사형('경쟁')이 아니라 동사형('경쟁시켜', '붙여서', '대결')을 신호로 쓴다.
+
+신호가 있을 때만 AskUserQuestion 1문항으로 확인한다:
+
+```json
+{
+  "questions": [
+    {
+      "question": "이 작업을 어떤 모양으로 돌릴까요?",
+      "header": "실행형태",
+      "options": [
+        {"label": "병렬 (추천)", "description": "안 부딪히는 일을 동시에 처리해요. 가장 빠르고 대부분의 작업에 맞아요."},
+        {"label": "직렬·단계", "description": "앞 결과를 뒤에서 써야 할 때. 순서가 보장되지만 동시 처리 이득은 없어요."},
+        {"label": "토너먼트 (실험)", "description": "같은 과제를 여러 AI에게 시키고 테스트 통과 수로 승자를 골라요. 비용이 참가자 수만큼 듭니다. 통과/실패를 가릴 테스트(게이트)가 필수예요. ⚠️ 실측(2026-08-23) 결과 잘 명세된 태스크에서는 단독 대비 품질 이득이 없었어요 — 명세가 모호하거나 접근법이 갈리는 어려운 작업에만 권합니다."}
+      ],
+      "multiSelect": false
+    }
+  ]
+}
+```
+
+**토너먼트를 골랐는데 게이트를 만들 수 없는 작업이면(리서치·기획·문서 등) 그 자리에서 알린다:**
+"이 작업은 통과/실패를 가릴 테스트를 만들 수 없어서 채점이 불가능해요 — 병렬로 진행할게요."
+→ `parallel`로 전환. 게이트 없는 토너먼트는 실행하지 않는다.
+
+응답 수신 후 즉시 Step 4-W로 진행한다.
 
 > ⚠️ Workflow 도구는 사용자가 "Workflow"을 골랐을 때만 호출한다 (스킬 지시 = 유효 opt-in이지만, 사용자 선택 없이 임의 호출 금지).
 
@@ -509,6 +561,11 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 > **이 Step은 Workflow 경로 전용.** Agent Teams는 Step 4로.
 > 공유 메모리(6-2)·KKIRIKKIRI_DIR·도메인 카드 합성은 **생성하지 않는다** — 중간 결과는 스크립트 변수에 보관된다.
+
+> **🚨 EXECUTE NOW — Step 4-W 진입 즉시 실행:**
+> `Read(${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/execution-shapes.md)`
+> — 실행형태 5종(병렬·직렬·체인·부모자식·토너먼트)의 스크립트 골격과 토너먼트 가드가 들어 있다.
+> Step 3.6에서 고른 형태의 골격을 그대로 따른다.
 
 오케스트레이터(이 스킬을 실행 중인 Claude)가 인터뷰 답변을 바탕으로 워크플로우 스크립트를 **인라인으로** 작성한다.
 
@@ -673,7 +730,7 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 ```
 
 **응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
-- "네, 시작해주세요" → 즉시 Step 6-1의 team_name 생성 + KKIRIKKIRI_DIR 정의 + TeamCreate 호출로 진행
+- "네, 시작해주세요" → 즉시 Step 6-1의 team_name 생성 + KKIRIKKIRI_DIR 정의 + 첫 팀원 스폰으로 진행
 - "조정하고 싶어요" → 어떤 부분을 바꿀지 추가 AskUserQuestion 호출 후 Step 4 재실행
 - "처음부터 다시" → Step 1로 복귀, presets 재매칭부터 시작
 
@@ -681,8 +738,8 @@ AskUserQuestion의 `preview` 필드 또는 일반 텍스트로 팀 구성을 보
 > ```
 > Bash("RAND4=$(openssl rand -hex 2 2>/dev/null || printf '%04x' $((RANDOM % 65536))); echo kkirikkiri-{preset}-$(date +%Y%m%d-%H%M)-${RAND4}")
 > Bash("mkdir -p {KKIRIKKIRI_DIR}/{agents,prompts,agent-cache,archive} && mkdir -p {프로젝트루트}/.kkirikkiri/shared/saved-teams")
-> TeamCreate({ team_name: "{team_name}", description: "[팀 목표 요약]" })
 > ```
+> 그 다음 Step 6-2(공유 메모리)를 거쳐 6-4에서 **첫 팀원을 스폰**한다 — 팀은 그 순간 자동 형성되므로 별도 생성 호출은 없다.
 > 이 박스가 Step 5→6 경계의 도구 호출 앵커다. AskUserQuestion 응답만 받고 다음 도구 호출 없이 멈추면 안 된다.
 
 ---
@@ -733,13 +790,36 @@ KKIRIKKIRI_DIR={프로젝트루트}/.kkirikkiri/teams/{team_name}
 
 #### 사용자에게 team_name 출력
 
-팀 생성 직후 사용자에게 세션 핸들을 알린다:
+작업 디렉토리를 만든 직후 사용자에게 세션 핸들을 알린다. **아직 팀원을 스폰하기 전이므로 "팀이 생성되었습니다"라고 말하지 않는다** — 작업 공간만 준비된 상태다:
 
 ```
-팀이 생성되었습니다.
+작업 공간을 준비했습니다.
 세션 ID: {team_name}
 작업 디렉토리: {KKIRIKKIRI_DIR}
 ```
+
+팀이 실제로 만들어졌다는 보고는 **6-4에서 팀원을 스폰하고 아래 확인을 통과한 뒤에만** 한다.
+
+#### 팀 형성 확인 (스폰 직후 1회)
+
+팀원 스폰이 실제로 **팀**을 만들었는지, 아니면 평범한 서브에이전트로 떨어졌는지 확인한다. 둘은 겉보기가 같아서 확인 없이는 구분되지 않는다:
+
+```bash
+SID=$(echo "${CLAUDE_CODE_SESSION_ID:-}" | cut -c1-8)
+if [ -n "$SID" ] && [ -f "$HOME/.claude/teams/session-$SID/config.json" ]; then
+  python3 -c "
+import json,sys
+c=json.load(open('$HOME/.claude/teams/session-$SID/config.json'))
+mates=[m['name'] for m in c.get('members',[]) if m.get('agentType')!='team-lead']
+print('TEAM_OK' if mates else 'NO_TEAMMATES', mates)
+"
+else
+  echo "NO_TEAM_DIR"
+fi
+```
+
+- `TEAM_OK` → 진짜 팀이다. 사용자에게 "팀이 생성되었습니다"라고 알려도 된다.
+- `NO_TEAMMATES` / `NO_TEAM_DIR` → **팀이 아니라 서브에이전트로 동작 중이다.** 작업은 그대로 진행하되, 사용자에게 팀이라고 말하지 말고 "에이전트 N명이 병렬로 작업 중"이라고 정확히 알린다. 이 경우 Step 8의 종료 절차에서 `shutdown_request`를 보낼 팀원이 없으므로, 서브에이전트 완료를 기다리는 것으로 대체한다.
 
 #### 레거시 마이그레이션 시임 (flat → session-scoped)
 
@@ -777,14 +857,11 @@ mkdir -p {KKIRIKKIRI_DIR}/{agents,prompts,agent-cache,archive}
 mkdir -p {프로젝트루트}/.kkirikkiri/shared/saved-teams
 ```
 
-#### TeamCreate 호출
+#### 팀 생성은 별도 호출이 아니다
 
-```
-TeamCreate({
-  team_name: "{team_name}",
-  description: "[팀 목표 요약]"
-})
-```
+Claude Code v2.1.178부터 `TeamCreate`/`TeamDelete` 도구는 존재하지 않는다. 팀은 **첫 팀원을 스폰하는 순간 자동으로 형성**되고(현재 세션이 팀장), 세션이 끝나면 자동으로 정리된다. 플랫폼이 쓰는 팀 이름은 `session-` + 세션 ID 앞 8자로 자동 결정된다.
+
+여기서 만드는 `{team_name}`은 **플랫폼 팀 이름이 아니라 kkirikkiri 작업 디렉토리 이름**이다 — `KKIRIKKIRI_DIR` 경로 키로만 쓴다.
 
 team_name 예시: `kkirikkiri-research-20260503-1430-a3f2`
 
@@ -1040,6 +1117,8 @@ Codex CLI로 [역할]을 수행합니다. 다음 절차를 따르세요:
    → 출력되는 JOB_DIR 경로를 저장
    (디자인/UI 역할은 --provider antigravity. 단 agy 1.0.x는
     비-TTY에서 stdout 출력이 비는 버그가 있어 results가 빈 경우 Claude 폴백 권장)
+   (코드 교차 검토는 --provider grok. build를 codex가 했으면 검토는 grok으로 — 같은 family로
+    자기 산출물을 검토시키지 않는다. 실측 2026-08-23: grok 1.0.4는 비-TTY에서 stdout 정상)
 
 3. 완료 대기:
    Bash: "bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-cli.sh wait JOB_DIR"
@@ -1099,6 +1178,13 @@ Workflow({ script: "<Step 4-W에서 작성한 스크립트 전체>" })
 
 > **1라운드로 끝내지 않는다. 품질이 충분할 때까지 반복한다.**
 > ddg.kang: "팀리더가 30명 심부름꾼이 구현한거 최종검토 → 나에게 최종 보고 = 버그 하나도 없음"
+
+> **단, 반복에는 천장이 있다.** "충분할 때까지"는 "끝없이"가 아니다. 아래 셋 중 하나라도 걸리면 즉시 Step 8로 간다:
+> - 수용 기준을 전부 통과했다
+> - **2라운드를 마쳤다** (3라운드 이상은 사용자가 명시로 요청했을 때만)
+> - 직전 라운드 대비 실질 개선이 없다 (표현만 바뀌고 내용·정확성이 그대로)
+>
+> 남은 아쉬운 점은 더 돌리지 말고 **결과 보고에 "미해결" 항목으로 적는다.** 완료 판정을 미루는 것이 품질을 만들지 않는다.
 
 ### 7-1. 진행 상황 모니터링
 
@@ -1172,7 +1258,7 @@ ELIF 라운드 >= 3:
 
 **응답 처리 (Continuation Contract — 응답 수신 후 즉시 실행, 텍스트만 출력하고 멈춤 금지):**
 - "네, 보강해주세요" → 즉시 Step 7-6의 EXECUTE NOW Read 박스 실행 후 방식 A/B/C 선택
-- "이 정도면 괜찮아요" → 즉시 Step 8-1로 진행 (TeamDelete 호출)
+- "이 정도면 괜찮아요" → 즉시 Step 8-1로 진행 (팀원 shutdown_request)
 - "처음부터 다시" → Step 1로 복귀
 
 ### 7-6. 2라운드 실행 방식 (3가지)
@@ -1210,17 +1296,23 @@ ELIF 라운드 >= 3:
 
 ### 8-1. 팀 종료
 
+**6-1의 팀 형성 확인 결과에 따라 갈린다. 확인하지 않았다면 여기서 먼저 확인한다.**
+
+**`TEAM_OK`였던 경우** — 팀원마다 종료 요청을 보낸다:
+
 ```
-# 모든 팀원에게 종료 요청 (팀장이 이미 보냈을 수 있음)
 SendMessage({
   type: "shutdown_request",
   to: "[각 팀원 이름]",
   content: "작업이 완료되었습니다. 수고하셨습니다."
 })
-
-# 팀 리소스 정리
-TeamDelete()
 ```
+
+**`NO_TEAM_DIR` / `NO_TEAMMATES`였던 경우** — 보낼 팀원이 없다. `shutdown_request`를 시도하지 말고 **바로 8-2로 넘어간다.** 서브에이전트는 자기 작업이 끝나면 스스로 종료하고 결과가 회수된다.
+
+> 팀 리소스 정리는 **세션 종료 시 자동**이다 (v2.1.178부터 `TeamDelete`는 존재하지 않는다).
+
+> **🚨 산출물이 이미 완성됐는데 대기하지 마라.** 목표 산출물이 디스크에 존재하고 게이트를 통과했다면, 남은 에이전트의 보고를 무한정 기다리지 말고 8-2로 진행한다. 미완료 에이전트가 있으면 그 사실을 결과 보고에 한 줄로 명시하면 된다 — 기다림 자체가 완료 조건이 아니다.
 
 ### 8-2. 유저에게 결과 전달 + Auto-memory 유도
 
@@ -1318,7 +1410,7 @@ Write → {프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md
 
 ### Step 8-W: Workflow 결과 리포트
 
-> **Workflow 경로 전용.** TeamDelete·공유 메모리 정리 불필요.
+> **Workflow 경로 전용.** 팀 종료 절차·공유 메모리 정리 불필요.
 
 1. 워크플로우 반환값을 8-2와 같은 형식으로 리포트한다 (팀 구성 → "처리 규모(에이전트 수·스테이지)"로 대체):
    ```

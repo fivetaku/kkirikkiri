@@ -80,6 +80,7 @@ recommended-for 필드가 "research"이면 무조건 매칭.
 
 ### 외부 모델 활용
 - Codex CLI 있으면: 코드 리뷰 전담 역할 추가 (백그라운드, cross-model 1순위 검토자 — refute 프롬프트)
+- Grok CLI 있으면: 코드 리뷰 교차 검토자 추가 (백그라운드, Codex가 build면 grok이 검토 — refute 프롬프트)
 - Antigravity CLI(agy) 있으면: UI/디자인 리뷰 역할 추가 (백그라운드)
 - 없으면: Opus 적대 검토 인스턴스("결함을 찾아라" 프롬프트)가 리뷰 수행
 
@@ -360,8 +361,9 @@ Q2. "이 중에 가까운 게 있나요?" (header: "유형", multiSelect: false)
 - 분석·비평·최종 종합·핵심 구현: Opus (판단이 걸린 역할 전부)
 - 일반 워커 (리서치 수집·쿼리·드래프트·간단 구현): Sonnet — **워커 기본값, 적극 활용**
 - 기계적 글루 (파일 수집·포맷·추출): Haiku 가능 (판단 0인 일만)
-- 외부(Codex=코드·대규모 분석 / agy=디자인·UI): CLI 백그라운드 실행, 없으면 Claude 폴백
-- 검토는 build와 다른 family: Codex → agy → Opus 적대 인스턴스(refute 프롬프트)
+- 외부(Codex=코드·대규모 분석 / grok=코드·긴 컨텍스트 교차의견 / agy=디자인·UI): CLI 백그라운드 실행, 없으면 Claude 폴백
+- 검토는 build와 다른 family: Codex → grok → agy → Opus 적대 인스턴스(refute 프롬프트)
+  - build를 Codex가 했으면 검토는 grok, grok이 했으면 검토는 Codex — 같은 family로 자기 산출물을 검토시키지 않는다
 
 ### 동적 조정 공통 원칙
 - 프리셋은 출발점, 고정값 아님

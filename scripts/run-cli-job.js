@@ -3,27 +3,48 @@
  * run-cli-job.js — 끼리끼리 외부 CLI 오케스트레이터
  *
  * Subcommands:
- *   start  --provider codex|antigravity|gjc --prompt-file path [--timeout N] [--jobs-dir path] [--json]
+ *   start  --provider codex|antigravity|gjc|grok --prompt-file path [--timeout N] [--jobs-dir path] [--json]
  *   status [--text] JOB_DIR
  *   wait   [--timeout-ms N] [--interval-ms N] JOB_DIR
  *   results [--json] JOB_DIR
  *   stop   JOB_DIR
  *   clean  JOB_DIR
- *   check  codex|antigravity|gjc
+ *   check  codex|antigravity|gjc|grok
  */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const os = require('os');
 const { spawn, execFileSync } = require('child_process');
 
 const SCRIPT_DIR = __dirname;
 const WORKER_PATH = path.join(SCRIPT_DIR, 'run-cli-worker.js');
 const JOBS_DIR_DEFAULT = path.join(SCRIPT_DIR, '..', '.jobs');
 
-// provider → 실제 실행 바이너리 이름. antigravity의 바이너리는 `agy`, gjc는 gajae-code(Yeachan-Heo/gajae-code).
-// provider는 agy(Antigravity)·codex·gjc로 단일화.
-const PROVIDER_BINARIES = { codex: 'codex', antigravity: 'agy', gjc: 'gjc' };
+// provider → 실제 실행 바이너리 이름. antigravity의 바이너리는 `agy`, gjc는 gajae-code(Yeachan-Heo/gajae-code),
+// grok은 xAI Grok Build CLI.
+// provider는 agy(Antigravity)·codex·gjc·grok으로 단일화.
+const PROVIDER_BINARIES = { codex: 'codex', antigravity: 'agy', gjc: 'gjc', grok: 'grok' };
 const SUPPORTED_PROVIDERS = Object.keys(PROVIDER_BINARIES);
+
+// 일부 CLI는 셸 프로필을 통해서만 PATH에 올라가므로, 비대화형 셸(훅·CI·서브프로세스)에서
+// `which`가 실패한다. 알려진 설치 경로를 PATH 앞에 덧대어 그 오탐을 막는다.
+// grok: `curl -fsSL https://x.ai/cli/install.sh | bash` → ~/.grok/bin/grok
+// ⚠️ 이름 충돌: npm의 서드파티 `@vibe-kit/grok-cli`도 `grok` 바이너리를 설치한다(실측 2026-08-23,
+//    /opt/homebrew/bin/grok v1.0.1). 그쪽은 아래 플래그(--sandbox/--no-auto-update 등)를 모른다.
+//    ~/.grok/bin을 PATH **앞**에 붙이는 이 순서가 공식 xAI CLI를 결정적으로 이기게 하는 장치다.
+const EXTRA_BIN_DIRS = [path.join(os.homedir(), '.grok', 'bin')];
+
+function envWithExtraPaths(base) {
+  const env = { ...(base || process.env) };
+  const existing = EXTRA_BIN_DIRS.filter((d) => {
+    try { return fs.existsSync(d); } catch { return false; }
+  });
+  if (existing.length === 0) return env;
+  const sep = process.platform === 'win32' ? ';' : ':';
+  env.PATH = [...existing, env.PATH || ''].filter(Boolean).join(sep);
+  return env;
+}
 
 function killProcess(pid) {
   try {
@@ -101,13 +122,13 @@ function printHelp() {
   process.stdout.write(`run-cli-job.js — 끼리끼리 외부 CLI 러너
 
 Usage:
-  run-cli.sh start --provider codex|antigravity|gjc --prompt-file path [--timeout N] [--json]
+  run-cli.sh start --provider codex|antigravity|gjc|grok --prompt-file path [--timeout N] [--json]
   run-cli.sh status [--text] <JOB_DIR>
   run-cli.sh wait [--timeout-ms N] [--interval-ms N] <JOB_DIR>
   run-cli.sh results [--json] <JOB_DIR>
   run-cli.sh stop <JOB_DIR>
   run-cli.sh clean <JOB_DIR>
-  run-cli.sh check codex|antigravity|gjc
+  run-cli.sh check codex|antigravity|gjc|grok
 `);
 }
 
@@ -175,7 +196,7 @@ function cmdStart(options) {
   const child = spawn(process.execPath, workerArgs, {
     detached: true,
     stdio: 'ignore',
-    env: process.env,
+    env: envWithExtraPaths(),
   });
   child.unref();
 
@@ -299,7 +320,7 @@ function cmdCheck(provider) {
 
   try {
     const whichCmd = process.platform === 'win32' ? 'where' : 'which';
-    const result = execFileSync(whichCmd, [binary], { encoding: 'utf8', timeout: 5000 }).trim();
+    const result = execFileSync(whichCmd, [binary], { encoding: 'utf8', timeout: 5000, env: envWithExtraPaths() }).trim();
     const firstLine = result.split(/\r?\n/)[0]; // where returns multiple lines on Windows
     process.stdout.write(`${provider}: found at ${firstLine}\n`);
     process.exit(0);

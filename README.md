@@ -174,6 +174,7 @@ If a team member fails to join:
 ```bash
 npm install -g @openai/codex                                    # Codex CLI — code & large-scale analysis, cross-model review
 curl -fsSL https://antigravity.google/cli/install.sh | bash     # Antigravity CLI (agy) — design/UI
+curl -fsSL https://x.ai/cli/install.sh | bash                  # Grok CLI (code, long-context cross-review)
 ```
 
 Works without these. Claude handles the full team on its own.

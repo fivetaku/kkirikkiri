@@ -7,8 +7,28 @@
  */
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
+
+// 일부 CLI는 셸 프로필을 통해서만 PATH에 올라가므로, 비대화형 셸(훅·CI·detached 워커)에서
+// spawn이 ENOENT로 죽는다. 알려진 설치 경로를 PATH 앞에 덧대어 그 오탐을 막는다.
+// grok: `curl -fsSL https://x.ai/cli/install.sh | bash` → ~/.grok/bin/grok
+// ⚠️ 이름 충돌: npm의 서드파티 `@vibe-kit/grok-cli`도 `grok` 바이너리를 설치한다(실측 2026-08-23,
+//    /opt/homebrew/bin/grok v1.0.1). 그쪽은 아래 플래그(--sandbox/--no-auto-update 등)를 모른다.
+//    ~/.grok/bin을 PATH **앞**에 붙이는 이 순서가 공식 xAI CLI를 결정적으로 이기게 하는 장치다.
+const EXTRA_BIN_DIRS = [path.join(os.homedir(), '.grok', 'bin')];
+
+function envWithExtraPaths(base) {
+  const env = { ...(base || process.env) };
+  const existing = EXTRA_BIN_DIRS.filter((d) => {
+    try { return fs.existsSync(d); } catch { return false; }
+  });
+  if (existing.length === 0) return env;
+  const sep = process.platform === 'win32' ? ';' : ':';
+  env.PATH = [...existing, env.PATH || ''].filter(Boolean).join(sep);
+  return env;
+}
 
 function killProcess(pid) {
   try {
@@ -75,8 +95,16 @@ function main() {
   // Validate provider CLI exists
   let program, args;
   if (provider === 'codex') {
+    // OpenAI Codex CLI — 비대화형 원샷: `codex exec [FLAGS] "<프롬프트>"` (pumasi와 동일 패턴).
+    // agy/gjc처럼 프롬프트는 파일 경로가 아니라 "내용 문자열"을 마지막 positional로 전달한다.
+    // 모델은 CLI 기본값 사용 (필요 시 KKIRIKKIRI_CODEX_MODEL 환경 변수로 오버라이드).
+    const promptContent = fs.readFileSync(promptFile, 'utf8');
     program = 'codex';
-    args = ['--full-auto', '--quiet', '-m', 'o3', promptFile];
+    args = ['exec', '--dangerously-bypass-approvals-and-sandbox'];
+    if (process.env.KKIRIKKIRI_CODEX_MODEL) {
+      args.push('-m', process.env.KKIRIKKIRI_CODEX_MODEL);
+    }
+    args.push(promptContent);
   } else if (provider === 'antigravity') {
     // Google Antigravity CLI (바이너리: `agy`) (2026-06-18 개인/Pro/Ultra 전환).
     // 원샷 헤드리스 호출: `agy -p "<프롬프트>"`, 자동승인: --dangerously-skip-permissions.
@@ -95,6 +123,24 @@ function main() {
     const promptContent = fs.readFileSync(promptFile, 'utf8');
     program = 'gjc';
     args = ['--print', promptContent];
+  } else if (provider === 'grok') {
+    // xAI Grok Build CLI (바이너리: `grok`).
+    // 비대화형 원샷: `grok -p "<프롬프트>"`. codex/agy/gjc처럼 프롬프트는 파일 경로가 아니라
+    // "내용 문자열"을 -p 값으로 전달한다. (grok은 `--prompt-file`도 지원하지만 다른 provider와
+    //  형태를 맞춰 -p로 통일한다.)
+    // 실측(2026-08-23, grok 1.0.4): 비-TTY 파이프에서도 stdout 정상 출력 — agy의 stdout 누락 버그 없음.
+    // 주의 1) 샌드박스가 **기본 off**다(codex와 반대). 워커가 임의 파일·네트워크에 닿지 않도록
+    //         `--sandbox workspace`로 조인다.
+    // 주의 2) 자동 업데이터가 백그라운드로 돌아 실행 중 끼어들 수 있으므로 `--no-auto-update` 필수.
+    // 주의 3) 대체 화면(alt-screen) TUI 진입을 막기 위해 `--no-alt-screen`을 함께 준다.
+    // 모델은 grok 기본값(grok-4.6) 사용. `grok-code-fast-1`은 2026-08-15 폐기되어 쓰지 않는다.
+    const promptContent = fs.readFileSync(promptFile, 'utf8');
+    program = 'grok';
+    args = ['--no-auto-update', '--no-alt-screen', '--sandbox', 'workspace', '--always-approve'];
+    if (process.env.KKIRIKKIRI_GROK_MODEL) {
+      args.push('-m', process.env.KKIRIKKIRI_GROK_MODEL);
+    }
+    args.push('-p', promptContent);
   } else {
     atomicWriteJson(statusPath, {
       provider,
@@ -119,7 +165,7 @@ function main() {
   try {
     child = spawn(program, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
+      env: envWithExtraPaths(),
     });
   } catch (error) {
     atomicWriteJson(statusPath, {
