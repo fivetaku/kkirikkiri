@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.23.0 (2026-08-30)
+
+구조적 팀 빌더 개편 — "역할극이 아닌 자원 경계로 팀을 짠다"
+
+- **Step 3.5 절단선 3문 진단**: 오케스트레이터가 독립성/상호의존/나눌 가치를 자답해 Workflow·Teams·single_session을 판정하고 근거를 표시. 애매할 때만 질문 폴백
+- **Workflow 4단 게이트**: W1 WorkflowSpec 선작성 → W2 wf-lint 결정론 린트 → W3 설계 카드 → W4 발사 직후 프리플라이트
+- **scripts/wf-lint.js 신설**: R1 meta 리터럴 / R2 팬아웃 schema / R3 model 핀 / R4 fan-in 라운드로빈 / R5 예산 필드 / R6 폭 / R7 refute(경고). 회귀 fixture 2종 동봉(2026-08-29 실측 결함 사본 포함)
+- **팀원 카드 경계 블록 필수화**: tools·write_scope·stop·effort·review_mode — 결핍 시 합성 불가, 검증 역할 read-only 고정
+- **공통 규정 신설**: 백그라운드 생존확인(mtime 점검) + 런 장부(.kkirikkiri/runs/)
+- 근거: 6월 DOE + 8월 베이스라인 12런(경계 위반 7건 실측) + 리서치 7축 66소스
+
+
 ## 0.22.0 — 2026-08-23
 
 - **Grok CLI(`grok`) 프로바이더 추가.** xAI Grok Build를 네 번째 외주 워커로 등록했다. `--provider grok`으로 호출한다.
