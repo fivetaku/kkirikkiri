@@ -89,6 +89,33 @@ Step 8:   결과 수집 + 리포트               Step 8-W: 반환값 리포트
 
 ---
 
+## 공통 규정: 백그라운드 생존확인 + 런 장부 (v0.23.0 — 양 경로 공통)
+
+### 백그라운드 생존확인 (liveness)
+
+백그라운드로 띄운 에이전트·팀원·Workflow는 **알림 없이 죽거나 행에 걸릴 수 있다** (실측: 2026-08-29 외부 에이전트 6시간 무산출 방치, 2026-08-30 headless 런 11.4시간 행). 규정:
+
+| 항목 | 값 |
+|---|---|
+| 점검 방법 | 트랜스크립트/산출물 파일의 **mtime + 크기만** 확인 (내용 읽기 금지 — 컨텍스트 오염 방지) |
+| 점검 시점 | spawn +10분, 이후 작업 전환점마다 |
+| 사망 판정 | mtime 정지 ≥10분 AND 완료 알림 없음 |
+| 조치 | ① 재가동 1회("추가 조사 금지, 지금까지 것만 정리 반환") ② 실패 시 메인스레드 폴백 ③ 장부 `liveness_events`에 기록 |
+
+### 런 장부 (run ledger)
+
+모든 실행(Teams·Workflow 공통)은 `.kkirikkiri/runs/<YYYYMMDD_HHMMSS>.json` 1파일로 기록을 남긴다. **실패한 런도 기록한다** — 실패가 개선 루프의 원료다.
+
+```json
+{"diagnosis": {}, "spec": {}, "lint_report": {},
+ "budget_used": {"search": 0, "cap": 200}, "missing_axes": [],
+ "boundary_violations": [], "repair_cycles": 0,
+ "liveness_events": [], "outcome": {"deliverable": "...", "done": true}}
+```
+
+- Workflow 경로: W1(diagnosis·spec) → W2(lint_report) → W4(budget·missing·repair) → 완료(outcome) 순으로 채운다.
+- Teams 경로: diagnosis·팀 구성(경계 블록 요약)·liveness·outcome을 기록한다 (spec·lint는 해당 없음 — null).
+
 ## Step 1: 의도 파악 + 프리셋 매칭
 
 사용자의 자연어 입력에서 키워드를 추출하여 프리셋을 매칭한다.
