@@ -160,6 +160,8 @@ archetype별로 살의 결이 다름:
 
 `{KKIRIKKIRI_DIR}/agents/{역할명}.md`에 다음 구조로 Write. 목표 100~150줄.
 
+> **경계 블록 필수 게이트 (v0.23.0)**: frontmatter의 `tools`·`stop`·`effort`·`model`은 전 역할 필수, `write_scope`는 쓰기 역할 필수다. **하나라도 비면 그 카드는 합성하지 않는다** — 값을 못 정하겠으면 역할 분해([1])로 돌아가 경계가 정해질 때까지 역할을 재정의한다. 페르소나(정체성·소통 스타일)는 스타일·다양성 레버로만 쓰고 **능력·권한 서술을 페르소나에 두지 않는다** (능력·권한은 경계 블록이 정의한다. 근거: 페르소나는 객관 과제 성능을 바꾸지 못한다는 실증 + 커뮤니티 360개 카드 전수에서 경계 필드 사실상 0건).
+
 ```markdown
 ---
 name: [역할명]
@@ -168,6 +170,12 @@ domain: [도메인 한 줄]
 team: [team_name]
 model: [opus / sonnet]
 created: [timestamp]
+# ── 경계 블록 (필수 — 없으면 합성 불가) ──
+tools: [허용 도구 allowlist — 예: Read, Grep, Glob, WebSearch. 역할에 필요한 최소만]
+write_scope: [쓰기 역할 필수 — 배타적 소유 glob. 예: ["src/api/**", "docs/api.md"]. 두 팀원의 scope가 겹치면 설계 결함 — 겹치는 파일은 소유자 1명을 정하고 나머지는 그 팀원에게 변경을 요청한다]
+stop: {maxTurns: [정수], done_when: "[완료 판정 한 줄]"}
+effort: [Anthropic scaling 준용 — 단순 3-10 툴콜 / 비교 10-15 / 복잡은 별도 합의]
+review_mode: [Critic/검증 역할이면 true 고정 — true면 tools에 Write·Edit 금지 (read-only 하드코딩: 리뷰는 발견을 생산하지 변경을 생산하지 않는다)]
 ---
 
 # [역할명]
