@@ -341,28 +341,38 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ---
 
-## Step 3.5: 실행 방식 선택 (substrate 분기)
+## Step 3.5: 절단선 진단 + 실행 방식 결정 (substrate 분기)
 
-**원칙: 임의로 실행 방식을 정하지 않는다. 사용자가 AskUserQuestion으로 직접 고른다.**
+**원칙 (v0.23.0 개편): 오케스트레이터가 절단선 3문을 자답해 방식을 판정하고, 판정 근거를 사용자에게 반드시 표시한다. AskUserQuestion은 판정이 애매할 때만 폴백으로 쓴다.** (근거: 2026-08 베이스라인 실험 — 품질은 방식으로 안 갈리고 과제 유형·자원 경계로 갈린다)
 
-### 가용성 분기 (Step 2 스캔 결과 사용)
+### 절단선 3문 진단 (자답 — 사용자에게 묻지 않음)
+
+인터뷰 내용을 근거로 세 질문에 스스로 답한다:
+
+| # | 질문 | yes 신호 |
+|---|---|---|
+| Q1 | 작업 항목들이 서로 **독립**이고 산출물이 하나로 **수렴**하는가? | "전부·모든·N개", 감사·마이그레이션·다수 소스 조사, 항목 간 참조 없음 |
+| Q2 | 작업 중 발견이 다른 작업자의 일을 바꾸거나, **관점 충돌**을 부딪혀야 하는가? | 교차 모순 탐지, 설계 트레이드오프, "결정해줘·비평해줘", 상호참조 문서 세트 |
+| Q3 | 애초에 **나눌 가치**가 있는가? — 필요 탐색량이 단일 컨텍스트를 초과하고, read-heavy·저의존이며, 멀티에이전트 오버헤드(토큰 수배)를 감당할 가치가 있는가? | 대량 읽기, 컨텍스트 초과 규모 |
+
+**판정 규칙**: Q3=no → `single_session` / Q3=yes & Q1 우세 → `Workflow` / Q3=yes & Q2 우세 → `Agent Teams` / Q1·Q2 신호가 상충하거나 둘 다 약함 → **애매 판정 → AskUserQuestion 폴백** (아래 2지선다).
+
+**근거 표시 (필수)**: 판정 직후 사용자에게 1~2문장으로 보여준다. 예: `판정: Workflow — 항목 5개가 상호 독립·읽기 중심이라 결정론 팬아웃이 유리해요 (순차 의존·관점 충돌 신호 없음).`
+
+**single_session 판정 시**: 팀·워크플로를 만들지 않는다. "이 작업은 나누면 오히려 손해예요(순차 의존이 강하거나 단일 컨텍스트로 충분) — 그냥 이 세션에서 바로 처리할게요"라고 근거와 함께 안내하고 일반 작업으로 수행한다. 사용자가 그래도 팀/워크플로를 원한다고 명시하면 그 선택을 따른다.
+
+### 가용성 분기 (Step 2 스캔 결과로 판정을 덮어씀)
 
 | teams_enabled | workflows_available | 동작 |
 |:---:|:---:|---|
-| true | true | **AskUserQuestion 2지선다** (아래) |
-| true | false | 질문 생략 → Agent Teams 직행 (Step 4) |
-| false | true | 질문 생략 → Workflow 직행 (Step 4-W) |
+| true | true | 진단 판정대로 진행 (애매하면 AskUserQuestion 2지선다) |
+| true | false | 판정이 Workflow여도 Agent Teams로 폴백 — 사유 안내 후 Step 4 |
+| false | true | 판정이 Teams여도 Workflow로 폴백 — 사유 안내 후 Step 3.6 |
 | false | false | 실행 불가 — "둘 중 하나를 켜야 해요" 안내 후 종료 (check-env 안내 참조) |
 
-### 추천 휴리스틱 — "(추천)" 표시 결정
+> **Workflow opt-in 보존**: 진단이 자답이어도 Workflow 도구 호출 전에 반드시 Step 4-W의 **W3 설계 카드**에서 사용자 확인을 받는다(Teams는 Step 5 팀 구성 제안이 그 역할). 자답 판정만으로 도구를 임의 호출하지 않는다.
 
-| 신호 | 추천 |
-|---|---|
-| 수렴·관점충돌·설계결정·적대적 리뷰·트레이드오프 / "결정해줘"·"검토·비평해줘" / 프리셋 product·analysis | **Agent Teams** |
-| 독립·대량·결정론 / "전부·모든·N개" / 감사·마이그레이션·다수 소스 교차검증 / 프리셋 research·대규모 development | **Workflow** |
-| 애매하면 | Agent Teams (소규모 안전 기본값). 단 명백히 대량이면 Workflow |
-
-### EXECUTE — AskUserQuestion 호출 (2지선다일 때)
+### EXECUTE — AskUserQuestion 폴백 호출 (애매 판정일 때만)
 
 **EXECUTE:** 추천 옵션을 첫 번째에 배치하고 "(추천)"을 붙여 즉시 호출한다:
 
@@ -567,7 +577,35 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 > — 실행형태 5종(병렬·직렬·체인·부모자식·토너먼트)의 스크립트 골격과 토너먼트 가드가 들어 있다.
 > Step 3.6에서 고른 형태의 골격을 그대로 따른다.
 
-오케스트레이터(이 스킬을 실행 중인 Claude)가 인터뷰 답변을 바탕으로 워크플로우 스크립트를 **인라인으로** 작성한다.
+오케스트레이터(이 스킬을 실행 중인 Claude)가 인터뷰 답변을 바탕으로 **4단 게이트(W1 명세 → W2 린트 → W3 설계 카드 → 발사 → W4 프리플라이트)** 를 통과시키며 워크플로우를 구성한다. 스크립트보다 명세가 먼저다.
+
+### W1 — WorkflowSpec 선작성 (스크립트 작성 전)
+
+런 장부 파일 `.kkirikkiri/runs/<YYYYMMDD_HHMMSS>.json`을 생성하고 Step 3.5 진단(diagnosis)과 함께 명세를 기록한다:
+
+```json
+{"diagnosis": {"q1": true, "q2": false, "q3": true, "verdict": "workflow", "rationale": "..."},
+ "spec": {"axes": [{"key": "...", "goal": "...", "budget": 8}], "width_wave1": 5, "width_expand": 5,
+  "fanin_rule": "round_robin", "barrier_reason": null, "models": {"수집": "sonnet", "종합": "opus"},
+  "contract_layers": {"반환 구조": "schema", "예산 회계": "schema", "counter URL 등록": "prompt"},
+  "est_tokens": "46338*N+59132 준용 견적"}}
+```
+
+- `fanin_rule`: 팬아웃 결과를 재분배(리드 확장 등)하는 지점이 있으면 `round_robin` 또는 `quota`를 명시한다. `none`이면 재분배 없음.
+- `barrier_reason`: `parallel()` 배리어가 필요한 이유(축 간 dedup 등). 없으면 null로 두고 스크립트는 `pipeline()`을 쓴다.
+- `contract_layers`: 에이전트에게 요구하는 계약마다 배치 층(schema/lint/prompt)을 적는다. **기계 판정 가능한 계약을 prompt 층에 두는 것은 설계 결함이다** (2026-08-29 실측: 스키마 계약 10/10 준수, 프롬프트 계약만 구멍).
+
+### W2 — wf-lint 실행 (발사 전 결정론 게이트)
+
+스크립트 초안을 임시 파일로 저장하고 린트를 돌린다:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/wf-lint.js" /tmp/kkirikkiri-wf-draft.js
+```
+
+- **exit 1(위반)이면 발사 금지** — violations를 고치고 재실행, 통과까지 반복한다.
+- 출력의 checklist C1(배리어 필요성)·C2(계약 배치)·C3(축 커버리지)는 오케스트레이터가 자답해 런 장부에 `lint_report`와 함께 기록한다.
+- 규칙: R1 meta 리터럴 / R2 팬아웃 schema / R3 model 핀 / R4 fan-in 라운드로빈 / R5 예산 반환 필드 / R6 폭 ≤6 / R7 refute 스테이지(경고).
 
 ### 스크립트 구성 규칙
 
@@ -612,12 +650,26 @@ phase('종합')
 return await agent(`검증 통과 결과만 종합 리포트로: ...`, {model: 'opus', phase: '종합'})
 ```
 
-### Continuation
+### W3 — 설계 카드 (Continuation, 사용자 확인 지점)
 
-스크립트 작성 완료 → **Step 5를 건너뛰고 즉시 Step 6-W로 진행** (Workflow 도구의 승인 카드가 사용자 확인 역할 — 이중 승인 방지). 사용자에게는 한 줄만 안내:
+스크립트가 W2를 통과하면 **Step 5를 건너뛰고 즉시 Step 6-W로 진행**하되, Workflow 도구 호출 직전에 설계 요약표를 사용자에게 보여준다 (이것이 자답 진단 체제에서의 Workflow opt-in 확인 지점 — Workflow 도구의 승인 카드가 최종 게이트라 별도 AskUserQuestion은 하지 않는다):
+
 ```
-Workflow를 구성했어요. 실행 승인 창이 뜨면 내용을 확인하고 시작해주세요.
+Workflow 설계 (wf-lint 통과):
+| 축 N개 | 폭 5 | 예산 축당 8회 | 수집 sonnet / 종합 opus | 견적 ~X만 토큰 |
+판정 근거: {Step 3.5 rationale 한 줄}
+실행 승인 창이 뜨면 내용을 확인하고 시작해주세요.
 ```
+
+### W4 — 프리플라이트 (발사 직후 1라운드 검사)
+
+첫 phase(1라운드 팬아웃) 결과가 돌아오면 종합·확장으로 넘어가기 전에 즉시 검사한다:
+
+1. **누락 축**: null 반환·미커버 축이 있으면 보고하고 배치 모드로 보충한다 (조용한 커버리지 구멍 금지).
+2. **예산 회계**: 반환된 `search_count` 합산 — 세션 캡(200) 80% 초과 시 확장 라운드 축소.
+3. **계약 위반**: 스키마 밖 필드 의존·미등록 산출이 보이면 후속 라운드 프롬프트를 즉시 보정한다 (실측: 조기 1사이클이 사후 2사이클보다 싸다).
+
+검사 결과를 런 장부(`budget_used`·`missing_axes`·`repair_cycles`)에 기록하고 진행한다. 완료 후 outcome까지 기록하면 장부가 닫힌다.
 
 ---
 
