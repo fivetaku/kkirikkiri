@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.23.1 (2026-08-31)
+
+경계 블록을 프롬프트 지시에서 **코드 게이트로 강등** — Phase 2 전/후 실측에서 프롬프트층 지시만으로는 발화하지 않음(Teams 런 언급 0회)이 확인된 데 따른 후속.
+
+- **scripts/card-lint.js 신설**: 팀원 카드 frontmatter 검사 — C1 필수 경계 필드(tools·stop·effort·model) / C2 stop 하위 키 / C3 Critic의 review_mode + read-only 강제 / C4 쓰기 역할 write_scope / **C5 카드 간 write_scope 교집합 금지**
+- **SKILL.md Step 6-2.6 신설**: 카드 Write 직후·spawn 직전 card-lint 필수 실행, exit 1이면 스폰 금지. 6-4에 선행 조건 명시("즉시 실행" 요청에도 게이트 유지)
+- 스폰 프롬프트에 경계 블록 본문 재명시 규정 추가
+- 회귀 fixture: tests/fixtures/cards-defect(10 violations, C5 교집합 2건 포함) / cards-clean(통과)
+
+
 ## 0.23.0 (2026-08-30)
 
 구조적 팀 빌더 개편 — "역할극이 아닌 자원 경계로 팀을 짠다"

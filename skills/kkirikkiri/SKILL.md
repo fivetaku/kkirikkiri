@@ -1084,6 +1084,21 @@ Read("{KKIRIKKIRI_DIR}/agents/{역할명}.md") 로
 - Phase 1: 세션이 끝나도 `{KKIRIKKIRI_DIR}/` 전체가 유지됨 (참조 가능)
 - `saved-teams/`에 팀 저장 시 `{KKIRIKKIRI_DIR}/` 경로를 함께 기록하여 재구성 가능
 
+### 6-2.6. 카드 게이트 (card-lint — spawn 전 필수, v0.23.1)
+
+**🚨 EXECUTE NOW — 카드를 Write한 직후, 팀원을 스폰하기 전에 반드시 실행한다:**
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/card-lint.js" --dir "{KKIRIKKIRI_DIR}/agents"
+```
+
+- **exit 1이면 스폰 금지.** violations를 카드에 반영하고 통과할 때까지 재실행한다.
+- 검사 항목: C1 필수 경계 필드(tools·stop·effort·model) / C2 stop 하위 키(maxTurns 정수·done_when) / C3 Critic의 review_mode + read-only(쓰기 도구 보유 금지) / C4 쓰기 역할의 write_scope / **C5 카드 간 write_scope 교집합**.
+- **C5가 이 게이트의 핵심이다.** 두 팀원이 같은 파일/글롭을 소유하면 무협의 동시수정이 발생한다(2026-08 실측: 공유 파일 위반이 전 런에서 발생). 해소 방법은 둘 중 하나 —
+  1. 공유 파일의 **소유자를 1명으로 정하고** 나머지 팀원은 그 팀원에게 변경을 요청하도록 카드에 명시한다.
+  2. 파일을 분할해 각자 배타 영역으로 만든다.
+- 게이트 결과(`summary`)를 런 장부의 `boundary_violations`에 기록한다. **프롬프트 지시가 아니라 이 코드 게이트가 경계 블록의 강제 수단이다** (Phase 2 판정에서 프롬프트층 지시만으로는 발화하지 않음이 실측됨).
+
 ### 6-3. 태스크 생성
 
 팀장이 수행할 전체 작업 계획을 기반으로 TaskCreate로 태스크를 생성한다.
@@ -1103,6 +1118,9 @@ TaskCreate({
 4. "결과 통합 + 리포트" — 팀장이 검증/통합, 리포트 작성 지시
 
 ### 6-4. Claude 팀원 스폰
+
+> ⛔ **선행 조건**: 6-2.6 card-lint가 exit 0으로 통과했어야 한다. 통과 기록 없이 스폰하지 않는다 — 사용자가 "질문 생략하고 즉시 실행"을 요청했더라도 이 게이트는 건너뛰지 않는다.
+> 스폰 프롬프트에는 카드의 경계 블록을 **본문으로 다시 명시**한다: 허용 도구, `write_scope` 밖 파일 쓰기 금지(필요하면 소유자에게 요청), 정지 조건, 노력 예산.
 
 각 팀원을 Task 도구로 스폰한다. **subagent_type은 Step 4의 결정 결과에 따라:**
 
