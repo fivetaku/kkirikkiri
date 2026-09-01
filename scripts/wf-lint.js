@@ -60,9 +60,28 @@ function lint(text) {
     // R3: model 핀 — 모든 agent() 필수 (기존 Step 4-W 규칙 3)
     if (!/\bmodel\s*:/.test(c.body))
       V('R3-model-pin', c.idx, 'agent() 호출에 model 핀 없음 — 세션 모델 상속으로 비용 폭증 위험');
-    // R2: 팬아웃 agent()는 schema 필수 (종합 단일 콜은 예외)
-    if (c.inFanout && !/\bschema\s*:/.test(c.body))
-      V('R2-schema', c.idx, '팬아웃 agent()에 schema 없음 — 계약을 프롬프트가 아닌 도구 계층으로 내릴 것');
+    // R2: 팬아웃 agent()는 schema 필수 + 빈 껍데기({}) 금지 (종합 단일 콜은 예외)
+    if (c.inFanout) {
+      const sm = /\bschema\s*:\s*/.exec(c.body);
+      if (!sm) {
+        V('R2-schema', c.idx, '팬아웃 agent()에 schema 없음 — 계약을 프롬프트가 아닌 도구 계층으로 내릴 것');
+      } else {
+        // schema 값이 빈 객체면 계약이 없는 것과 같다 (2026-09-01 인계 스펙: 필드 1개 이상 강제)
+        const after = c.body.slice(sm.index + sm[0].length);
+        let empty = false;
+        if (after.startsWith('{')) {
+          empty = !balancedSlice(after, 0, '{', '}').includes(':');
+        } else {
+          const id = /^([A-Za-z_$][\w$]*)/.exec(after);
+          if (id) {
+            const dm = new RegExp('const\\s+' + id[1] + '\\s*=\\s*\\{').exec(text);
+            if (dm) empty = !balancedSlice(text, dm.index + dm[0].length - 1, '{', '}', 20000).includes(':');
+          }
+        }
+        if (empty)
+          V('R2-schema', c.idx, 'schema가 빈 객체 — 필드 1개 이상을 정의하라 (빈 스키마는 계약 부재와 동일)');
+      }
+    }
   }
 
   // ── R4: fan-in 독점 — flatMap 후 slice를 라운드로빈 없이 자름 (2026-08-29 확장 독점 실측) ──

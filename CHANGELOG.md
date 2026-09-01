@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.23.4 (2026-09-01)
+
+게이트 3종 자동 회귀 러너 + R2 조임 + CI 편입 (타 세션 인계 스펙 #14060 이행).
+
+- **tests/run-gates.sh 신설**: 픽스처 6종 전수 — clean은 exit 0, defect는 exit 1 + **JSON violations의 기대 규칙 ID 포함까지 대조**(우연히 다른 규칙으로 잡혀도 통과하는 것 차단). done-gate용 repo 픽스처는 러너가 자급 생성(외부 의존 0)
+- **wf-lint R2 조임**: `schema: {}` 및 `const EMPTY = {}` 참조형 빈 스키마를 R2-schema 위반으로 검출(필드 1개 이상 강제). 신규 fixture wf-defect-empty-schema.js — 러너가 조이기 전 이 구멍을 실제로 FAIL로 잡는 것을 확인 후 수정
+- **CI 편입**: .github/workflows/gates.yml — push/PR마다 러너 실행
+
+
 ## 0.23.3 (2026-09-01)
 
 done-gate 발화 수정 — v0.23.2에서 게이트를 공통 규정에만 두어 4런 중 1런만 발화한 문제.
