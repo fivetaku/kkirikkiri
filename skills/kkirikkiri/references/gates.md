@@ -33,7 +33,17 @@ Workflow 도구 호출 시 `tool_input.script`(또는 scriptPath)를 자동 린�
 **W3 설계 카드**: 발사 전 축×폭×예산×모델×견적(46,338·N+59,132) 요약을 사용자에게 표시 — 자답 진단 체제의 Workflow opt-in 지점.
 **W4 프리플라이트**: 1라운드 결과 수신 시 누락 축·예산(search_count 합)·계약 위반을 즉시 검사하고 장부(`budget_used`·`missing_axes`·`repair_cycles`)에 기록.
 
-## 2. card-lint — 팀원 스폰 전 (PostToolUse 훅 `gate-card.sh`)
+## 0. 런 컨텍스트는 훅이 만든다 (UserPromptSubmit `gate-init.sh`, v0.24.2)
+
+`/kkirikkiri …` 프롬프트가 들어오면 **훅이** `.kkirikkiri/runs/<ts>.json` 장부를 생성한다(열린 장부가 이미 있으면 재사용). 작업 repo는 cwd가 git이면 cwd, 아니면 cwd 직속 하위 git repo가 정확히 1개일 때 그것으로 자동 추정해 `work.repo`에 넣고, 보고서 기본 경로는 `<cwd>/output/report.md`.
+- 이유(실측 2026-09-04): 장부·카드 같은 "모델이 만들어야 하는 아티팩트"에 걸린 훅은 모델이 그걸 안 만들면 무력하다(T런 2/2 카드·장부 0건). 컨텍스트 수립을 하네스로 옮겨 아래 gate-spawn/gate-done이 항상 대상을 갖게 한다.
+- 오케스트레이터는 이 장부를 **덮어쓰지 말고 채운다**(diagnosis·spec·lint_report·outcome). `work.repo` 추정이 틀렸으면 고쳐 쓴다.
+
+## 2. 경계 강제 — 팀원 스폰 전 (PreToolUse `gate-spawn.sh` + PostToolUse `gate-card.sh`)
+
+**gate-spawn (도구 호출 기반 — 1차 강제)**: 열린 장부가 있는 cwd에서 Agent/Task를 호출하면 스폰 프롬프트 본문에 ① 허용 도구 또는 read-only 선언 ② write_scope(쓰기 소유권) 또는 read-only ③ 정지 조건(maxTurns/done_when) 세 가지가 있어야 한다. 없으면 **스폰이 차단**되고 누락 항목이 돌아온다 — 카드 파일 유무와 무관하게 작동한다. 차단은 장부 `boundary_violations`에 기록.
+
+**gate-card (아티팩트 기반 — 2차, 카드를 쓴 경우)**:
 
 `*/agents/<역할>.md`(frontmatter에 `archetype:` 있는 kkirikkiri 카드)가 Write/Edit되면 그 디렉토리 전체를 검사한다. 위반 사유가 돌아오면 **스폰 전에 카드를 고친다**.
 

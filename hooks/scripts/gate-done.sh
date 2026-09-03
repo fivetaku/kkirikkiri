@@ -41,18 +41,27 @@ OUT=$(node "$ROOT/scripts/done-gate.js" --repo "$REPO" --report "$REPORT" 2>/dev
 RC=$?
 mkdir -p "$HOME/.cache/kkirikkiri" 2>/dev/null
 printf '%s gate-done %s cwd=%s\n' "$(date '+%F %T')" "$([ "$RC" -eq 0 ] && echo pass || echo block)" "$CWD" >> "$HOME/.cache/kkirikkiri/hooks.log" 2>/dev/null
-# 장부에 판정 기록 (실패든 성공이든)
-python3 - "$LEDGER" "$RC" "$OUT" << 'PY' 2>/dev/null
+# 장부에 판정 기록 (실패든 성공이든) + 차단 횟수 누적. 3회 차단 후에는 종료를 허용한다(무한루프 하드캡 —
+# headless 실측 2026-09-04: stop_hook_active 가드만으로는 연속 차단이 3회 발생).
+BLOCKS=$(python3 - "$LEDGER" "$RC" "$OUT" << 'PY' 2>/dev/null
 import json, sys
-p, rc, out = sys.argv[1], sys.argv[2], sys.argv[3]
+p, rc, out = sys.argv[1], int(sys.argv[2]), sys.argv[3]
 try:
-    d = json.load(open(p)); d.setdefault("outcome_gate", {})
-    d["outcome_gate"] = {"done_gate_exit": int(rc), "report": json.loads(out) if out else None}
+    d = json.load(open(p)); g = d.get("outcome_gate") or {}
+    blocks = int(g.get("block_count", 0)) + (1 if rc != 0 else 0)
+    d["outcome_gate"] = {"done_gate_exit": rc, "block_count": blocks, "report": json.loads(out) if out else None}
     json.dump(d, open(p, "w"), ensure_ascii=False, indent=1)
+    print(blocks)
 except Exception:
-    pass
+    print(0)
 PY
+)
 [ "$RC" -eq 0 ] && exit 0
+if [ "${BLOCKS:-0}" -ge 3 ]; then
+  printf '%s gate-done cap-release cwd=%s (3회 차단 후 종료 허용)\n' "$(date '+%F %T')" "$CWD" >> "$HOME/.cache/kkirikkiri/hooks.log" 2>/dev/null
+  echo "[kkirikkiri gate-done] 3회 차단 후 종료 허용 — 무변경 종료가 정당화되지 않은 채 끝났음을 장부(block_count=$BLOCKS)에 남김" >&2
+  exit 0
+fi
 printf '%s' "$OUT" | python3 -c '
 import json, sys
 try: r = json.load(sys.stdin)

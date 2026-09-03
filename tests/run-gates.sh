@@ -83,7 +83,25 @@ cp tests/fixtures/done-gate/report-unjustified.md "$HD/output/report.md"
 printf '{"outcome": null, "work": {"repo": "%s", "report": "%s"}}\n' "$HD/repo" "$HD/output/report.md" > "$HD/.kkirikkiri/runs/20260904_000000.json"
 hook_exit "gate-done 무변경+무증적 차단" 2 hooks/scripts/gate-done.sh "{\"cwd\":\"$HD\",\"stop_hook_active\":false}"
 hook_exit "gate-done stop_hook_active 루프방지" 0 hooks/scripts/gate-done.sh "{\"cwd\":\"$HD\",\"stop_hook_active\":true}"
+# 하드캡: 차단 2회 더 누적(총 3회) → 그 다음은 종료 허용(exit 0)
+hook_exit "gate-done 2회차 차단" 2 hooks/scripts/gate-done.sh "{\"cwd\":\"$HD\",\"stop_hook_active\":false}"
+hook_exit "gate-done 3회차 차단→cap 해제" 0 hooks/scripts/gate-done.sh "{\"cwd\":\"$HD\",\"stop_hook_active\":false}"
 hook_exit "gate-done 장부 없는 cwd" 0 hooks/scripts/gate-done.sh '{"cwd":"/tmp","stop_hook_active":false}'
+
+note "── hooks: gate-init(UserPromptSubmit) / gate-spawn(PreToolUse Agent) ──"
+HI="$OUT/h-init"; mkdir -p "$HI/repo"; git -C "$HI/repo" init -q
+hook_exit "gate-init 비대상 프롬프트" 0 hooks/scripts/gate-init.sh "{\"cwd\":\"$HI\",\"prompt\":\"안녕\"}"
+[ ! -d "$HI/.kkirikkiri" ] && note "  PASS  gate-init 비대상은 장부 미생성" || { note "  FAIL  gate-init 비대상인데 장부 생성"; FAIL=1; }
+hook_exit "gate-init /kkirikkiri 프롬프트" 0 hooks/scripts/gate-init.sh "{\"cwd\":\"$HI\",\"prompt\":\"/kkirikkiri 아래 작업을 진행해줘\"}"
+L=$(ls "$HI"/.kkirikkiri/runs/*.json 2>/dev/null | head -1)
+if [ -n "$L" ] && python3 -c "import json,sys; d=json.load(open('$L')); sys.exit(0 if d['work']['repo'].endswith('/repo') and d['outcome'] is None else 1)"; then
+  note "  PASS  gate-init 장부 생성 + work.repo 하위 git repo 자동 추정"; else note "  FAIL  gate-init 장부/repo 추정 실패"; FAIL=1; fi
+hook_exit "gate-spawn 컨텍스트 없는 cwd → 무동작" 0 hooks/scripts/gate-spawn.sh '{"cwd":"/tmp","tool_name":"Agent","tool_input":{"prompt":"아무거나"}}'
+hook_exit "gate-spawn 경계 없는 스폰 차단" 2 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"worker\",\"prompt\":\"당신은 스키마 정비자입니다. schemas를 정비하세요.\"}}"
+hook_exit "gate-spawn 경계 있는 스폰 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"worker\",\"prompt\":\"허용 도구: Read, Write. write_scope: schemas/** (밖 파일 쓰기 금지). stop: maxTurns 20, done_when 스키마 정비 완료\"}}"
+hook_exit "gate-spawn read-only 리뷰어 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"critic\",\"prompt\":\"read-only 검증자. 쓰기 도구 없음. 정지 조건: maxTurns 15\"}}"
+python3 -c "import json,sys; d=json.load(open('$L')); sys.exit(0 if any(v.get('gate')=='spawn' for v in d.get('boundary_violations',[])) else 1)" \
+  && note "  PASS  gate-spawn 차단이 장부 boundary_violations에 기록" || { note "  FAIL  gate-spawn 장부 기록 없음"; FAIL=1; }
 
 if [ "$FAIL" -eq 0 ]; then note "── ALL GATES PASS ──"; else note "── GATE REGRESSION DETECTED ──"; fi
 exit "$FAIL"

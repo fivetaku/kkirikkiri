@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.24.2 (2026-09-04)
+
+게이트를 **아티팩트 기반 → 도구 호출 기반**으로 — R2 실측(gate-wf 2/2 발화 vs gate-card·gate-done 0/2: 모델이 카드·장부를 안 만들면 아티팩트 훅은 무력).
+
+- **gate-init.sh (UserPromptSubmit) 신설**: `/kkirikkiri` 프롬프트 감지 시 훅이 런 장부를 생성하고 작업 repo를 자동 추정(cwd 또는 유일 하위 git repo) — 컨텍스트 수립을 하네스로 이관
+- **gate-spawn.sh (PreToolUse Agent|Task) 신설**: 열린 장부 컨텍스트에서 스폰 프롬프트에 허용 도구/read-only·write_scope·정지 조건이 없으면 **스폰 차단** + 누락 항목 안내. 카드 없이 스폰하는 경로를 닫음
+- **gate-done 하드캡**: stop_hook_active 가드가 연속 차단을 막지 못함(headless 3회 차단 실측) → 장부 block_count 3회 후 종료 허용(cap-release 로그)
+- 러너 30 어서션(픽스처 12 + 훅 18), gates.md §0 신설
+
+
 ## 0.24.1 (2026-09-04)
 
 - 훅 관측 로그: 3게이트가 대상을 평가할 때마다 `~/.cache/kkirikkiri/hooks.log`에 1줄(pass/block·cwd) 기록 — 발화율 실측용(통과 시 무증적 문제 해소). 비대상 입력은 기록하지 않음
