@@ -39,6 +39,8 @@ REPORT=$(printf '%s\n' "$TARGET" | sed -n 3p)
 
 OUT=$(node "$ROOT/scripts/done-gate.js" --repo "$REPO" --report "$REPORT" 2>/dev/null)
 RC=$?
+mkdir -p "$HOME/.cache/kkirikkiri" 2>/dev/null
+printf '%s gate-done %s cwd=%s\n' "$(date '+%F %T')" "$([ "$RC" -eq 0 ] && echo pass || echo block)" "$CWD" >> "$HOME/.cache/kkirikkiri/hooks.log" 2>/dev/null
 # 장부에 판정 기록 (실패든 성공이든)
 python3 - "$LEDGER" "$RC" "$OUT" << 'PY' 2>/dev/null
 import json, sys

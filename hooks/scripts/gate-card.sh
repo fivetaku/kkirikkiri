@@ -31,6 +31,8 @@ print(os.path.dirname(p))
 
 REPORT=$(node "$ROOT/scripts/card-lint.js" --dir "$DIR" 2>/dev/null)
 RC=$?
+mkdir -p "$HOME/.cache/kkirikkiri" 2>/dev/null
+printf '%s gate-card %s dir=%s\n' "$(date '+%F %T')" "$([ "$RC" -eq 0 ] && echo pass || echo block)" "$DIR" >> "$HOME/.cache/kkirikkiri/hooks.log" 2>/dev/null
 [ "$RC" -eq 0 ] && exit 0
 printf '%s' "$REPORT" | python3 -c '
 import json, sys, os

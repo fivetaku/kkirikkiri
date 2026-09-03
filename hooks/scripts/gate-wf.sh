@@ -28,6 +28,9 @@ if s:
 
 REPORT=$(printf '%s' "$SCRIPT" | node "$ROOT/scripts/wf-lint.js" - 2>/dev/null)
 RC=$?
+# 관측 로그 — 발화 실측용 (대상 확정 후에만 기록, 통과/차단 모두). ddiring last-notify 패턴.
+mkdir -p "$HOME/.cache/kkirikkiri" 2>/dev/null
+printf '%s gate-wf %s cwd=%s\n' "$(date '+%F %T')" "$([ "$RC" -eq 0 ] && echo pass || echo block)" "$(printf '%s' "$INPUT" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("cwd",""))' 2>/dev/null)" >> "$HOME/.cache/kkirikkiri/hooks.log" 2>/dev/null
 if [ "$RC" -eq 0 ]; then
   exit 0
 fi
