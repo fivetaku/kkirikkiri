@@ -48,11 +48,41 @@ def log(kind):
 if not missing:
     # 지표 v2 자동화(R3): 선언된 경계를 장부에 기록 — violation-collector --ledger 가 사람 개입 없이 scopes를 구성한다
     scopes = []
-    m = re.search(r"write_scope\s*[:=]\s*\[?([^\]\n]+?)\]?(?:\s|$|\.|\(|,\s*stop)", p)
+    # 종결자: 여는 괄호 / 줄바꿈(\n 또는 JSON 이스케이프 \\n) / 'stop' / '허용' — '.'은 파일 확장자라 종결자로 쓰지 않는다 (R4 실측: CONVENTIONS.md → CONVENTIONS 절단)
+    m = re.search(r"write_scope\s*[:=]\s*\[?([^\]\n(]+?)(?:\]|\\n|\n|\s*\(|\s+stop\b|\s*/\s*stop|$)", p)
     if m:
-        scopes = [s.strip().strip('"\'`') for s in re.split(r"[,、]\s*", m.group(1)) if s.strip()]
-        scopes = [s for s in scopes if re.match(r"^[\w./*\-]+$", s)]
-    read_only = bool(re.search(r"read-?only|읽기 ?전용|review_mode", p, re.I))
+        # 산문 혼합 표기 대응(R4 실측: "repo/schemas/** 및 repo/CONVENTIONS.md에 규약 한두 줄 추가만 허용") — 경로형 토큰만 추출
+        seg = m.group(1)
+        # "…는 읽기만/수정 금지/read-only" 뒤에 오는 경로는 쓰기 범위가 아니다 — 그 마커 앞까지만 본다 (Y4 reconciler 실측)
+        seg = re.split(r"읽기만|읽기 ?전용|수정 ?금지|쓰기 ?금지|read-?only", seg, maxsplit=1)[0]
+        # ASCII 경로 토큰만 — \w는 한글도 매치해 "CONVENTIONS.md에" 같은 조사 붙은 토큰이 생긴다
+        scopes = re.findall(r"[A-Za-z0-9_./*\-]*(?:/|\*\*|\.(?:md|json|js|ts|py|ya?ml|txt))[A-Za-z0-9_./*\-]*", seg)
+        scopes = [s.strip('"\'`.,') for s in scopes if s.strip('"\'`.,') and s.lower() not in ("none", "없음")]
+        seen = set(); scopes = [s for s in scopes if not (s in seen or seen.add(s))]
+    # read_only는 write_scope가 없을 때만 — 쓰기 소유권이 선언된 팀원은 다른 파일을 '읽기 전용'이라 언급해도 read-only가 아니다 (R4 실측: reconciler 오판)
+    read_only = (not scopes) and bool(re.search(r"read-?only|읽기 ?전용|review_mode", p, re.I))
+    # C5@spawn: 이미 선언된 다른 팀원의 write_scope와 겹치면 차단 — 공유 파일은 소유자 1명 (R4 Y4 실측: 두 소유자가 CONVENTIONS.md를 함께 선언 → 위반 7)
+    try:
+        prev = (json.load(open(open_ledger)).get("declarations") or [])
+    except Exception:
+        prev = []
+    me = ti.get("name") or ti.get("description") or ""
+    def overlap(a, b):
+        a2, b2 = a.rstrip("/*"), b.rstrip("/*")
+        return a == b or a2 == b2 or a2.startswith(b2 + "/") or b2.startswith(a2 + "/")
+    clashes = [(g, d0["agent"], h) for d0 in prev if d0.get("agent") != me for g in scopes for h in (d0.get("write_scope") or []) if overlap(g, h)]
+    if clashes and not re.search(r"소유자\s*교체|takeover|재배정", p):
+        log("block-overlap")
+        try:
+            x = json.load(open(open_ledger)); x.setdefault("boundary_violations", []).append(
+                {"gate": "spawn-overlap", "agent": me, "clashes": [{"mine": g, "theirs": h, "owner": o} for g, o, h in clashes]})
+            json.dump(x, open(open_ledger, "w"), ensure_ascii=False, indent=1)
+        except Exception:
+            pass
+        print("[kkirikkiri gate-spawn] 스폰 차단 — write_scope가 이미 선언된 팀원과 겹친다 (공유 파일은 소유자 1명):", file=sys.stderr)
+        for g, o, h in clashes: print(f"  - {g} ↔ {o}의 {h}", file=sys.stderr)
+        print("  겹치는 파일은 한 팀원에게만 두고, 나머지는 그 팀원에게 변경을 요청하는 방식으로 프롬프트를 고쳐라. 상세: references/gates.md §2", file=sys.stderr)
+        sys.exit(2)
     try:
         x = json.load(open(open_ledger)); x.setdefault("declarations", []).append(
             {"agent": ti.get("name") or ti.get("description") or f"agent{len(x.get('declarations', []))+1}",

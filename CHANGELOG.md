@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.24.5 (2026-09-04)
+
+R4 8런 실측 반영 — 선언 추출 정밀화 + 스폰 시점 교집합 차단.
+
+- **gate-spawn C5@spawn**: 새 팀원의 write_scope가 이미 선언된 다른 팀원과 겹치면 **스폰 차단**(공유 파일은 소유자 1명) — R4 Y4에서 두 소유자가 CONVENTIONS.md를 함께 선언해 위반 7이 난 유형을 스폰 시점에 봉합. 장부 `boundary_violations[gate=spawn-overlap]` 기록
+- **write_scope 추출 정밀화**: `.`을 종결자로 쓰지 않음(CONVENTIONS.md 절단 방지) / 산문 혼합 표기에서 ASCII 경로 토큰만 추출(한글 조사 부착 방지) / "읽기만·수정 금지·read-only" 뒤 경로는 제외 / write_scope가 있으면 read_only로 오판하지 않음
+- **gate-done 재개 턴 평가**: stop_hook_active여도 평가·기록은 하고 차단만 안 함(final-unjustified 로그) — 최종 판정 공백 제거. 재개 턴은 block_count에 세지 않음
+- 러너 41 어서션 (C5@spawn 2건·산문 추출·드리프트 포함)
+
+
 ## 0.24.4 (2026-09-04)
 
 - **cwd 드리프트 봉합**: 모델이 `cd repo` 후 스폰·종료하면 훅의 cwd가 하위 디렉토리라 장부를 못 찾던 문제(R2-b 실측: T-X1 gate-spawn 0회, W-X1 gate-done 0회) — gate-spawn·gate-done이 상위 5단계까지 `.kkirikkiri/runs`를 탐색. 러너에 드리프트 케이스 2건 추가(34 어서션)

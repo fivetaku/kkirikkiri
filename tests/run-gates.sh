@@ -108,9 +108,19 @@ hook_exit "gate-done cwd 드리프트(하위 repo에서 종료)도 판정" 2 hoo
 hook_exit "gate-spawn read-only 리뷰어 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"critic\",\"prompt\":\"read-only 검증자. 쓰기 도구 없음. 정지 조건: maxTurns 15\"}}"
 python3 -c "import json,sys; d=json.load(open('$L')); sys.exit(0 if any(v.get('gate')=='spawn' for v in d.get('boundary_violations',[])) else 1)" \
   && note "  PASS  gate-spawn 차단이 장부 boundary_violations에 기록" || { note "  FAIL  gate-spawn 장부 기록 없음"; FAIL=1; }
+hook_exit "gate-spawn 산문 혼합 write_scope(Y4 문형) 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"prose-owner\",\"prompt\":\"허용 도구: Read, Write, Bash(파일 읽기/검증용) / write_scope: repo/docs/** 및 repo/README.md에 안내 한두 줄 추가만 허용 (repo/fixtures/**, repo/manifest.json 쓰기 금지) / stop: maxTurns 20\"}}"
+hook_exit "gate-spawn C5@spawn: 기존 선언(worker: schemas/**)과 겹치는 스폰 차단" 2 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"intruder\",\"prompt\":\"허용 도구: Read, Write. write_scope: schemas/user.schema.json. stop: maxTurns 5, done_when x\"}}"
+hook_exit "gate-spawn C5@spawn: 겹치지 않는 스폰 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"docs-owner\",\"prompt\":\"허용 도구: Read, Write. write_scope: docs/**. stop: maxTurns 5, done_when x\"}}"
+python3 -c "
+import json,sys; d=json.load(open('$L')); po=[x for x in d.get('declarations',[]) if x['agent']=='prose-owner']
+sys.exit(0 if po and po[0]['write_scope']==['repo/docs/**','repo/README.md'] else 1)" \
+  && note "  PASS  산문 혼합 표기에서 경로 토큰 2개 정확 추출" || { note "  FAIL  산문 혼합 추출 불일치"; FAIL=1; }
+hook_exit "gate-spawn 실전형 프롬프트(확장자·괄호·읽기전용 언급) 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"reconciler\",\"prompt\":\"허용 도구: Read, Edit. write_scope: repo/CONVENTIONS.md, repo/manifest.json (이 세 파일 외 다른 파일은 읽기 전용) stop: maxTurns 20, done_when 정합 확인\"}}"
 python3 -c "
 import json,sys; d=json.load(open('$L')); ds=d.get('declarations',[])
 ok = any(x['agent']=='worker' and 'schemas/**' in x['write_scope'] and not x['read_only'] for x in ds) and any(x['agent']=='critic' and x['read_only'] for x in ds)
+rec = [x for x in ds if x['agent']=='reconciler']
+ok = ok and rec and rec[0]['write_scope']==['repo/CONVENTIONS.md','repo/manifest.json'] and not rec[0]['read_only']
 sys.exit(0 if ok else 1)" \
   && note "  PASS  gate-spawn 통과 시 선언(write_scope·read_only) 장부 기록 (지표 v2 자동화 입력)" || { note "  FAIL  gate-spawn declarations 기록 불일치"; FAIL=1; }
 
