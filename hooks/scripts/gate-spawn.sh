@@ -39,6 +39,20 @@ def log(kind):
     with open(os.path.expanduser("~/.cache/kkirikkiri/hooks.log"), "a") as lg:
         lg.write(f"{datetime.datetime.now():%F %T} gate-spawn {kind} cwd={cwd} agent={ti.get('name') or ti.get('description') or ''}\n")
 if not missing:
+    # 지표 v2 자동화(R3): 선언된 경계를 장부에 기록 — violation-collector --ledger 가 사람 개입 없이 scopes를 구성한다
+    scopes = []
+    m = re.search(r"write_scope\s*[:=]\s*\[?([^\]\n]+?)\]?(?:\s|$|\.|\(|,\s*stop)", p)
+    if m:
+        scopes = [s.strip().strip('"\'`') for s in re.split(r"[,、]\s*", m.group(1)) if s.strip()]
+        scopes = [s for s in scopes if re.match(r"^[\w./*\-]+$", s)]
+    read_only = bool(re.search(r"read-?only|읽기 ?전용|review_mode", p, re.I))
+    try:
+        x = json.load(open(open_ledger)); x.setdefault("declarations", []).append(
+            {"agent": ti.get("name") or ti.get("description") or f"agent{len(x.get('declarations', []))+1}",
+             "write_scope": scopes, "read_only": read_only})
+        json.dump(x, open(open_ledger, "w"), ensure_ascii=False, indent=1)
+    except Exception:
+        pass
     log("pass"); sys.exit(0)
 log("block")
 try:

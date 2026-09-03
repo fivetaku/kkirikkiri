@@ -43,6 +43,8 @@ Workflow 도구 호출 시 `tool_input.script`(또는 scriptPath)를 자동 린�
 
 **gate-spawn (도구 호출 기반 — 1차 강제)**: 열린 장부가 있는 cwd에서 Agent/Task를 호출하면 스폰 프롬프트 본문에 ① 허용 도구 또는 read-only 선언 ② write_scope(쓰기 소유권) 또는 read-only ③ 정지 조건(maxTurns/done_when) 세 가지가 있어야 한다. 없으면 **스폰이 차단**되고 누락 항목이 돌아온다 — 카드 파일 유무와 무관하게 작동한다. 차단은 장부 `boundary_violations`에 기록.
 
+gate-spawn은 통과 시 선언을 장부 `declarations[{agent, write_scope, read_only}]`에 기록한다 — 위반 측정(지표 v2)이 이 선언에서 자동으로 scopes를 구성하므로, **스폰 프롬프트의 write_scope는 실제 glob 형태로** 쓴다(예: `write_scope: schemas/**, CONVENTIONS.md`). 공유 파일은 한 팀원의 write_scope에만 넣는다(단독 소유 = 조율). 한계: 선언의 존재는 강제되지만 "선언 준수"(소유자 외 팀원이 실제로 그 파일을 건드렸는지)는 팀원별 산출 격리 없이는 판정할 수 없다 — v0.25 백로그.
+
 **gate-card (아티팩트 기반 — 2차, 카드를 쓴 경우)**:
 
 `*/agents/<역할>.md`(frontmatter에 `archetype:` 있는 kkirikkiri 카드)가 Write/Edit되면 그 디렉토리 전체를 검사한다. 위반 사유가 돌아오면 **스폰 전에 카드를 고친다**.

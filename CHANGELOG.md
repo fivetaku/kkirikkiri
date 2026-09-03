@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.24.3 (2026-09-04)
+
+지표 v2 자동화(R3) — 경계 위반 측정에서 사람 개입 제거.
+
+- **gate-spawn이 통과 시 선언을 장부에 기록**: `declarations[{agent, write_scope[], read_only}]` — 스폰 프롬프트에서 write_scope glob·read-only를 추출
+- 실험 도구 violation-collector `--ledger <장부>` 모드: declarations에서 scopes를 자동 구성, 단독 소유 glob은 조율된 소유로 자동 유도. 선언 0인 팀은 모든 변경이 위반(경계 미선언 = 전부 위반) — 검증 3케이스(조율 0 / 비조율 overlap 1 / 미선언 3)
+- 한계 명시(gates.md): 선언 "존재"는 검증하지만 선언 "준수"(소유자 외 팀원의 실제 접촉)는 팀원별 산출 격리 없이는 판정 불가 — v0.25 백로그
+
+
 ## 0.24.2 (2026-09-04)
 
 게이트를 **아티팩트 기반 → 도구 호출 기반**으로 — R2 실측(gate-wf 2/2 발화 vs gate-card·gate-done 0/2: 모델이 카드·장부를 안 만들면 아티팩트 훅은 무력).

@@ -102,6 +102,11 @@ hook_exit "gate-spawn 경계 있는 스폰 통과" 0 hooks/scripts/gate-spawn.sh
 hook_exit "gate-spawn read-only 리뷰어 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"critic\",\"prompt\":\"read-only 검증자. 쓰기 도구 없음. 정지 조건: maxTurns 15\"}}"
 python3 -c "import json,sys; d=json.load(open('$L')); sys.exit(0 if any(v.get('gate')=='spawn' for v in d.get('boundary_violations',[])) else 1)" \
   && note "  PASS  gate-spawn 차단이 장부 boundary_violations에 기록" || { note "  FAIL  gate-spawn 장부 기록 없음"; FAIL=1; }
+python3 -c "
+import json,sys; d=json.load(open('$L')); ds=d.get('declarations',[])
+ok = any(x['agent']=='worker' and 'schemas/**' in x['write_scope'] and not x['read_only'] for x in ds) and any(x['agent']=='critic' and x['read_only'] for x in ds)
+sys.exit(0 if ok else 1)" \
+  && note "  PASS  gate-spawn 통과 시 선언(write_scope·read_only) 장부 기록 (지표 v2 자동화 입력)" || { note "  FAIL  gate-spawn declarations 기록 불일치"; FAIL=1; }
 
 if [ "$FAIL" -eq 0 ]; then note "── ALL GATES PASS ──"; else note "── GATE REGRESSION DETECTED ──"; fi
 exit "$FAIL"
