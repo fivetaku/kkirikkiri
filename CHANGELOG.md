@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.24.0 (2026-09-04)
+
+게이트 3종을 SKILL 텍스트에서 **훅(하네스 계층)으로 이관** — 텍스트 앵커 방식의 발화 불안정(100%↔0% 진동) 해소.
+
+- **hooks/hooks.json 신설(플러그인 훅, settings.json 불필요)**: PreToolUse(Workflow)→gate-wf.sh(wf-lint, 위반 시 호출 차단) / PostToolUse(Write|Edit, `*/agents/*.md` 카드만)→gate-card.sh(card-lint 피드백) / Stop→gate-done.sh(열린 장부의 `work{repo,report}` 대상 done-gate, 무변경 무증적 종료 차단, stop_hook_active 시 무한루프 방지)
+- **가드 계약**: 비대상 입력은 ~65ms 내 exit 0 (실측) — 타 세션·워크스페이스 부담 없음
+- **SKILL.md 다이어트**: 게이트 상세를 `references/gates.md`로 외부화, 본문은 앵커 1줄씩. 런 장부 스키마에 `work{repo,report}` 추가(done-gate 대상 지정), `outcome`은 완료 전 null
+- **run-gates.sh에 훅 스모크 추가**: 합성 훅 JSON을 stdin으로 주입해 exit 0/2 대조 (3게이트 × 차단/통과/비대상)
+
+
 ## 0.23.4 (2026-09-01)
 
 게이트 3종 자동 회귀 러너 + R2 조임 + CI 편입 (타 세션 인계 스펙 #14060 이행).

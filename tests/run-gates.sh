@@ -61,5 +61,29 @@ node scripts/done-gate.js --repo "$R" --report tests/fixtures/done-gate/report-j
 printf '{"x":1}\n' >> "$R/manifest.json"
 node scripts/done-gate.js --repo "$R" --report tests/fixtures/done-gate/report-unjustified.md > "$OUT/dc.json"; expect_exit "done-gate 변경있음" 0 $?
 
+note "── hooks (합성 훅 JSON → exit 0/2 대조) ──"
+export CLAUDE_PLUGIN_ROOT="$PWD"
+hook_exit() { # <이름> <기대exit> <스크립트> <json>
+  printf '%s' "$4" | bash "$3" >/dev/null 2>&1; local rc=$?
+  if [ "$rc" -eq "$2" ]; then note "  PASS  $1 (exit $rc)"; else note "  FAIL  $1 — 기대 exit $2, 실제 $rc"; FAIL=1; fi
+}
+WF_DEFECT=$(python3 -c "import json;print(json.dumps({'tool_name':'Workflow','tool_input':{'script':open('tests/fixtures/wf-defect-20260829.js').read()}}))")
+WF_CLEAN=$(python3 -c "import json;print(json.dumps({'tool_name':'Workflow','tool_input':{'script':open('tests/fixtures/wf-clean.js').read()}}))")
+hook_exit "gate-wf defect 차단" 2 hooks/scripts/gate-wf.sh "$WF_DEFECT"
+hook_exit "gate-wf clean 통과" 0 hooks/scripts/gate-wf.sh "$WF_CLEAN"
+hook_exit "gate-wf 비대상 도구" 0 hooks/scripts/gate-wf.sh '{"tool_name":"Read","tool_input":{"file_path":"/x"}}'
+HA="$OUT/h-agents"; mkdir -p "$HA/d/agents" "$HA/c/agents"
+cp tests/fixtures/cards-defect/*.md "$HA/d/agents/"; cp tests/fixtures/cards-clean/*.md "$HA/c/agents/"
+hook_exit "gate-card defect 피드백" 2 hooks/scripts/gate-card.sh "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$HA/d/agents/감사자.md\"}}"
+hook_exit "gate-card clean 통과" 0 hooks/scripts/gate-card.sh "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$HA/c/agents/감사자.md\"}}"
+hook_exit "gate-card 비대상 경로" 0 hooks/scripts/gate-card.sh '{"tool_name":"Write","tool_input":{"file_path":"/tmp/foo.md"}}'
+HD="$OUT/h-done"; mkdir -p "$HD/.kkirikkiri/runs" "$HD/output"; cp -R "$R" "$HD/repo"
+git -C "$HD/repo" checkout -q -- . 2>/dev/null; git -C "$HD/repo" clean -qfd 2>/dev/null   # 위 done-gate 테스트의 변경 원복
+cp tests/fixtures/done-gate/report-unjustified.md "$HD/output/report.md"
+printf '{"outcome": null, "work": {"repo": "%s", "report": "%s"}}\n' "$HD/repo" "$HD/output/report.md" > "$HD/.kkirikkiri/runs/20260904_000000.json"
+hook_exit "gate-done 무변경+무증적 차단" 2 hooks/scripts/gate-done.sh "{\"cwd\":\"$HD\",\"stop_hook_active\":false}"
+hook_exit "gate-done stop_hook_active 루프방지" 0 hooks/scripts/gate-done.sh "{\"cwd\":\"$HD\",\"stop_hook_active\":true}"
+hook_exit "gate-done 장부 없는 cwd" 0 hooks/scripts/gate-done.sh '{"cwd":"/tmp","stop_hook_active":false}'
+
 if [ "$FAIL" -eq 0 ]; then note "── ALL GATES PASS ──"; else note "── GATE REGRESSION DETECTED ──"; fi
 exit "$FAIL"

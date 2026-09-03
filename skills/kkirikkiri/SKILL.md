@@ -102,21 +102,12 @@ Step 8:   결과 수집 + 리포트               Step 8-W: 반환값 리포트
 | 사망 판정 | mtime 정지 ≥10분 AND 완료 알림 없음 |
 | 조치 | ① 재가동 1회("추가 조사 금지, 지금까지 것만 정리 반환") ② 실패 시 메인스레드 폴백 ③ 장부 `liveness_events`에 기록 |
 
-### 완료 게이트 (done-gate — 무행동 종료 방지, v0.23.2)
+### 게이트 3종 — 훅이 강제한다 (v0.24.0)
 
-작업 대상이 git 저장소이고 팀·워크플로가 "정비/수정/구현"류 과제를 맡았다면, **완료 보고 직전에** 실행한다:
+wf-lint(Workflow 발사 전)·card-lint(팀원 스폰 전)·done-gate(완료 전)는 **`hooks/hooks.json`의 PreToolUse/PostToolUse/Stop 훅이 자동 실행**한다. 이 문서의 어느 지시도 게이트의 강제 수단이 아니다 — 훅이 차단하면 stderr로 돌아온 위반 사유를 고치고 다시 진행한다. 상세 규칙·해소 방법: `Read(${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/gates.md)`.
 
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/done-gate.js" --repo <작업 repo> --report <보고서.md>
-```
-
-- **변경 있음** → pass. 출력의 `evidence`(diff --stat)를 완료 보고에 그대로 동봉한다.
-- **변경 없음** → 보고서에 `## 무변경 종료 심사` 블록이 있고, **추적 파일 전수를 파일별 3열 표(파일 / 검사 내용 / 변경 불요 근거)로 커버**해야 pass. 아니면 exit 1 — 정비를 수행하거나 심사 증적을 채우기 전에는 완료로 보고하지 않는다.
-- 근거: 2026-09-01 H1 재측정 실측 — 무행동 종료 런이 0→1→2로 늘고 품질이 3.8점(16점 만점) 낮았다. **"점검했더니 이상 없음"은 공짜 결론이 아니라 증명 대상이다.** 위반 지표가 무행동을 보상하는 함정도 이 게이트로 막는다.
-- 판정 결과를 런 장부의 `outcome.done_gate`에 기록한다.
-- **호출 지점(EXECUTE 앵커)**: Step 7 팀 완료 보고 수신 시 / Step 7-W 결과 수신 시. 이 규정 섹션을 읽는 것만으로는 실행되지 않는다.
-
-> ⚠️ **게이트 배치 원칙 (2026-09-01 실측 교훈)**: 코드 게이트를 만들어도 **실행 흐름의 특정 스텝에 `🚨 EXECUTE NOW` 블록으로 박히지 않으면 발화하지 않는다.** v0.23.2에서 done-gate를 공통 규정에만 두었더니 4런 중 1런에서만 발화했다(wf-lint는 W2, card-lint는 6-2.6에 앵커가 있어 정상 발화). 새 게이트를 추가할 때는 스크립트 작성 + 규정 서술 + **실행 스텝 앵커** 3종을 모두 채운다.
+- done-gate가 대상을 알려면 **런 장부에 `work: {repo, report}` 블록이 있어야 한다** (아래 장부 스키마).
+- 근거(실측): SKILL 텍스트 앵커는 발화율이 100%↔0%로 진동했다(2026-09-01). 훅은 텍스트 길이·모델 판단과 무관하게 실행된다.
 
 ### 런 장부 (run ledger)
 
@@ -124,10 +115,13 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/done-gate.js" --repo <작업 repo> --report 
 
 ```json
 {"diagnosis": {}, "spec": {}, "lint_report": {},
+ "work": {"repo": "/abs/작업-repo", "report": "/abs/output/report.md"},
  "budget_used": {"search": 0, "cap": 200}, "missing_axes": [],
  "boundary_violations": [], "repair_cycles": 0,
- "liveness_events": [], "outcome": {"deliverable": "...", "done": true}}
+ "liveness_events": [], "outcome": null}
 ```
+
+- `work`는 작업 대상이 git 저장소일 때 **시작 시점에** 기록한다 — Stop 훅(done-gate)이 이 필드로 대상을 찾는다. `outcome`은 완료 시 채운다(비어 있는 동안 훅이 감시).
 
 - Workflow 경로: W1(diagnosis·spec) → W2(lint_report) → W4(budget·missing·repair) → 완료(outcome) 순으로 채운다.
 - Teams 경로: diagnosis·팀 구성(경계 블록 요약)·liveness·outcome을 기록한다 (spec·lint는 해당 없음 — null).
@@ -624,31 +618,11 @@ presets.md에 정의된 프리셋별 인터뷰 질문을 **반드시 AskUserQues
 
 ### W1 — WorkflowSpec 선작성 (스크립트 작성 전)
 
-런 장부 파일 `.kkirikkiri/runs/<YYYYMMDD_HHMMSS>.json`을 생성하고 Step 3.5 진단(diagnosis)과 함께 명세를 기록한다:
+런 장부 `.kkirikkiri/runs/<YYYYMMDD_HHMMSS>.json`을 생성하고 Step 3.5 진단 + 명세(`spec`: axes·width·fanin_rule·barrier_reason·models·contract_layers·est_tokens) + 작업 대상이 저장소면 `work{repo,report}`를 기록한다. 필드 의미·설계 결함 기준은 `references/gates.md` §1.
 
-```json
-{"diagnosis": {"q1": true, "q2": false, "q3": true, "verdict": "workflow", "rationale": "..."},
- "spec": {"axes": [{"key": "...", "goal": "...", "budget": 8}], "width_wave1": 5, "width_expand": 5,
-  "fanin_rule": "round_robin", "barrier_reason": null, "models": {"수집": "sonnet", "종합": "opus"},
-  "contract_layers": {"반환 구조": "schema", "예산 회계": "schema", "counter URL 등록": "prompt"},
-  "est_tokens": "46338*N+59132 준용 견적"}}
-```
+### W2 — wf-lint (훅이 자동 실행)
 
-- `fanin_rule`: 팬아웃 결과를 재분배(리드 확장 등)하는 지점이 있으면 `round_robin` 또는 `quota`를 명시한다. `none`이면 재분배 없음.
-- `barrier_reason`: `parallel()` 배리어가 필요한 이유(축 간 dedup 등). 없으면 null로 두고 스크립트는 `pipeline()`을 쓴다.
-- `contract_layers`: 에이전트에게 요구하는 계약마다 배치 층(schema/lint/prompt)을 적는다. **기계 판정 가능한 계약을 prompt 층에 두는 것은 설계 결함이다** (2026-08-29 실측: 스키마 계약 10/10 준수, 프롬프트 계약만 구멍).
-
-### W2 — wf-lint 실행 (발사 전 결정론 게이트)
-
-스크립트 초안을 임시 파일로 저장하고 린트를 돌린다:
-
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/wf-lint.js" /tmp/kkirikkiri-wf-draft.js
-```
-
-- **exit 1(위반)이면 발사 금지** — violations를 고치고 재실행, 통과까지 반복한다.
-- 출력의 checklist C1(배리어 필요성)·C2(계약 배치)·C3(축 커버리지)는 오케스트레이터가 자답해 런 장부에 `lint_report`와 함께 기록한다.
-- 규칙: R1 meta 리터럴 / R2 팬아웃 schema / R3 model 핀 / R4 fan-in 라운드로빈 / R5 예산 반환 필드 / R6 폭 ≤6 / R7 refute 스테이지(경고).
+Workflow 도구 호출 시 PreToolUse 훅이 스크립트를 wf-lint로 검사하고 **위반이면 호출을 차단**한다 — 돌아온 사유(R1~R7)를 고치고 다시 호출한다. 사전 자가점검: `node "${CLAUDE_PLUGIN_ROOT}/scripts/wf-lint.js" <초안.js>`. checklist C1~C3 자답을 장부 `lint_report`에 기록.
 
 ### 스크립트 구성 규칙
 
@@ -706,13 +680,7 @@ Workflow 설계 (wf-lint 통과):
 
 ### W4 — 프리플라이트 (발사 직후 1라운드 검사)
 
-첫 phase(1라운드 팬아웃) 결과가 돌아오면 종합·확장으로 넘어가기 전에 즉시 검사한다:
-
-1. **누락 축**: null 반환·미커버 축이 있으면 보고하고 배치 모드로 보충한다 (조용한 커버리지 구멍 금지).
-2. **예산 회계**: 반환된 `search_count` 합산 — 세션 캡(200) 80% 초과 시 확장 라운드 축소.
-3. **계약 위반**: 스키마 밖 필드 의존·미등록 산출이 보이면 후속 라운드 프롬프트를 즉시 보정한다 (실측: 조기 1사이클이 사후 2사이클보다 싸다).
-
-검사 결과를 런 장부(`budget_used`·`missing_axes`·`repair_cycles`)에 기록하고 진행한다. 완료 후 outcome까지 기록하면 장부가 닫힌다.
+1라운드 결과 수신 즉시 누락 축·예산(`search_count` 합, 캡 80% 초과 시 확장 축소)·계약 위반을 검사하고 장부(`budget_used`·`missing_axes`·`repair_cycles`)에 기록한다. 상세: `references/gates.md` §1 W4. 완료 시 `outcome`을 채우면 장부가 닫힌다(Stop 훅 done-gate가 그 전까지 감시).
 
 ---
 
@@ -1100,20 +1068,9 @@ Read("{KKIRIKKIRI_DIR}/agents/{역할명}.md") 로
 - Phase 1: 세션이 끝나도 `{KKIRIKKIRI_DIR}/` 전체가 유지됨 (참조 가능)
 - `saved-teams/`에 팀 저장 시 `{KKIRIKKIRI_DIR}/` 경로를 함께 기록하여 재구성 가능
 
-### 6-2.6. 카드 게이트 (card-lint — spawn 전 필수, v0.23.1)
+### 6-2.6. 카드 게이트 (card-lint — 훅이 자동 실행)
 
-**🚨 EXECUTE NOW — 카드를 Write한 직후, 팀원을 스폰하기 전에 반드시 실행한다:**
-
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/card-lint.js" --dir "{KKIRIKKIRI_DIR}/agents"
-```
-
-- **exit 1이면 스폰 금지.** violations를 카드에 반영하고 통과할 때까지 재실행한다.
-- 검사 항목: C1 필수 경계 필드(tools·stop·effort·model) / C2 stop 하위 키(maxTurns 정수·done_when) / C3 Critic의 review_mode + read-only(쓰기 도구 보유 금지) / C4 쓰기 역할의 write_scope / **C5 카드 간 write_scope 교집합**.
-- **C5가 이 게이트의 핵심이다.** 두 팀원이 같은 파일/글롭을 소유하면 무협의 동시수정이 발생한다(2026-08 실측: 공유 파일 위반이 전 런에서 발생). 해소 방법은 둘 중 하나 —
-  1. 공유 파일의 **소유자를 1명으로 정하고** 나머지 팀원은 그 팀원에게 변경을 요청하도록 카드에 명시한다.
-  2. 파일을 분할해 각자 배타 영역으로 만든다.
-- 게이트 결과(`summary`)를 런 장부의 `boundary_violations`에 기록한다. **프롬프트 지시가 아니라 이 코드 게이트가 경계 블록의 강제 수단이다** (Phase 2 판정에서 프롬프트층 지시만으로는 발화하지 않음이 실측됨).
+카드를 `{KKIRIKKIRI_DIR}/agents/*.md`에 Write하면 PostToolUse 훅이 디렉토리 전체를 card-lint로 검사하고 위반(C1~C5)을 돌려준다 — **위반이 남은 상태로 스폰하지 않는다.** 핵심은 C5(카드 간 write_scope 교집합): 공유 파일은 소유자 1명 지정 + 나머지는 변경 요청. 규칙·해소법: `references/gates.md` §2. 결과를 장부 `boundary_violations`에 기록.
 
 ### 6-3. 태스크 생성
 
@@ -1312,11 +1269,7 @@ Workflow({ script: "<Step 4-W에서 작성한 스크립트 전체>" })
 2. TEAM_PLAN.md의 "검증 결과" 섹션 확인
 3. 팀장의 품질 평가 확인
 
-> **🚨 EXECUTE NOW — 완료 게이트 (작업 대상이 git 저장소일 때 필수):**
-> ```bash
-> node "${CLAUDE_PLUGIN_ROOT}/scripts/done-gate.js" --repo <작업 repo> --report <리포트.md>
-> ```
-> **exit 1이면 완료로 받지 않는다** — 팀장에게 반려하고(정비 수행 또는 파일별 무변경 심사 증적 작성) 재보고를 받는다. 판정을 런 장부 `outcome.done_gate`에 기록. 상세는 공통 규정 §완료 게이트.
+> **완료 게이트(done-gate)는 Stop 훅이 자동 실행한다** — 장부에 `work{repo,report}`가 있고 `outcome`이 비어 있으면 종료 시 판정하고, 무변경인데 심사 증적이 없으면 종료를 차단한다. 차단 사유가 오면 팀장에게 반려(정비 수행 또는 파일별 무변경 심사표) 후 재보고. 상세: `references/gates.md` §3.
 
 ### 7-3. 품질 판정
 
@@ -1405,11 +1358,7 @@ ELIF 라운드 >= 3:
 1. **검증은 이미 끝났다** — 스크립트 내부 adversarial-verify 스테이지가 1차 검증을 수행했다.
 2. **cross-model 사후 검토 (선택)**: 결과가 고위험 결정·코드 산출물이고 **Codex CLI가 설치돼 있으면**, 워크플로우 반환값을 `run-cli.sh --provider codex`로 1회 적대 검토("결함을 찾아 반박하라")에 보낸다. 없으면 생략 — 내부 verify 스테이지가 기본 검증.
 3. **결과 미흡 시**: Ralph 루프를 돌리지 않는다. 대신 스크립트의 해당 스테이지를 수정해 **재실행을 제안**한다 (resume으로 완료된 스테이지는 캐시 재사용).
-4. **🚨 EXECUTE NOW — 완료 게이트 (작업 대상이 git 저장소일 때 필수):**
-   ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/done-gate.js" --repo <작업 repo> --report <리포트.md>
-   ```
-   **exit 1이면 완료로 받지 않는다** — 정비를 수행하거나 파일별 무변경 심사 증적을 채운 뒤 재판정. 판정을 런 장부 `outcome.done_gate`에 기록.
+4. **완료 게이트(done-gate)는 Stop 훅이 자동 실행한다** — 장부 `work{repo,report}` 기준으로 무변경 종료를 심사 증적 없이 통과시키지 않는다. 차단되면 정비 수행 또는 심사표 작성 후 재완료. 상세: `references/gates.md` §3.
 5. 완료 → Step 8-W로.
 
 ---
