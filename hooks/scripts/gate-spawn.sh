@@ -14,8 +14,15 @@ except Exception:
 if d.get("tool_name") not in ("Agent", "Task"):
     sys.exit(0)
 cwd = d.get("cwd") or os.getcwd()
-runs = os.path.join(cwd, ".kkirikkiri", "runs")
-if not os.path.isdir(runs):
+# cwd 드리프트 대응(2026-09-04 실측: 모델이 `cd repo` 후 스폰하면 훅 cwd가 하위 디렉토리) — 상위 5단계까지 장부 탐색
+runs = None
+probe = os.path.abspath(cwd); home = os.path.expanduser("~")
+for _ in range(6):
+    cand = os.path.join(probe, ".kkirikkiri", "runs")
+    if os.path.isdir(cand): runs = cand; break
+    if probe in (home, "/") or os.path.dirname(probe) == probe: break
+    probe = os.path.dirname(probe)
+if not runs:
     sys.exit(0)
 open_ledger = None
 for f in sorted(glob.glob(os.path.join(runs, "*.json")), reverse=True):

@@ -1,6 +1,6 @@
 {
   "name": "kkirikkiri",
-  "version": "0.24.3",
+  "version": "0.24.4",
   "description": "Natural language team builder for Claude Code — one sentence becomes an AI team (Agent Teams) or a deterministic agent pipeline (Workflows). User picks the execution substrate; models are tiered (Opus lead/judge, Sonnet workers, cross-model review via Codex/agy)",
   "author": {
     "name": "fivetaku",

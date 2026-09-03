@@ -99,6 +99,12 @@ if [ -n "$L" ] && python3 -c "import json,sys; d=json.load(open('$L')); sys.exit
 hook_exit "gate-spawn 컨텍스트 없는 cwd → 무동작" 0 hooks/scripts/gate-spawn.sh '{"cwd":"/tmp","tool_name":"Agent","tool_input":{"prompt":"아무거나"}}'
 hook_exit "gate-spawn 경계 없는 스폰 차단" 2 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"worker\",\"prompt\":\"당신은 스키마 정비자입니다. schemas를 정비하세요.\"}}"
 hook_exit "gate-spawn 경계 있는 스폰 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"worker\",\"prompt\":\"허용 도구: Read, Write. write_scope: schemas/** (밖 파일 쓰기 금지). stop: maxTurns 20, done_when 스키마 정비 완료\"}}"
+hook_exit "gate-spawn cwd 드리프트(하위 repo에서 스폰)도 차단" 2 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI/repo\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"drift\",\"prompt\":\"경계 없음\"}}"
+# 드리프트용 새 장부(위 HD는 block_count 3으로 cap 해제 상태라 별도 디렉토리)
+HD2="$OUT/h-done2"; mkdir -p "$HD2/.kkirikkiri/runs" "$HD2/output"; cp -R "$R" "$HD2/repo"; git -C "$HD2/repo" checkout -q -- . 2>/dev/null
+cp tests/fixtures/done-gate/report-unjustified.md "$HD2/output/report.md"
+printf '{"outcome": null, "work": {"repo": "%s", "report": "%s"}}\n' "$HD2/repo" "$HD2/output/report.md" > "$HD2/.kkirikkiri/runs/20260904_000001.json"
+hook_exit "gate-done cwd 드리프트(하위 repo에서 종료)도 판정" 2 hooks/scripts/gate-done.sh "{\"cwd\":\"$HD2/repo\",\"stop_hook_active\":false}"
 hook_exit "gate-spawn read-only 리뷰어 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"critic\",\"prompt\":\"read-only 검증자. 쓰기 도구 없음. 정지 조건: maxTurns 15\"}}"
 python3 -c "import json,sys; d=json.load(open('$L')); sys.exit(0 if any(v.get('gate')=='spawn' for v in d.get('boundary_violations',[])) else 1)" \
   && note "  PASS  gate-spawn 차단이 장부 boundary_violations에 기록" || { note "  FAIL  gate-spawn 장부 기록 없음"; FAIL=1; }

@@ -13,8 +13,14 @@ except Exception: sys.exit(0)
 if d.get("stop_hook_active"): sys.exit(0)
 print(d.get("cwd") or "")' 2>/dev/null)
 [ -n "$CWD" ] || CWD="$PWD"
-RUNS="$CWD/.kkirikkiri/runs"
-[ -d "$RUNS" ] || exit 0
+# cwd 드리프트 대응 — 상위 5단계까지 .kkirikkiri/runs 탐색 (모델이 cd 한 상태로 종료하는 경우)
+RUNS=""; PROBE="$CWD"
+for _ in 1 2 3 4 5 6; do
+  if [ -d "$PROBE/.kkirikkiri/runs" ]; then RUNS="$PROBE/.kkirikkiri/runs"; break; fi
+  [ "$PROBE" = "$HOME" ] || [ "$PROBE" = "/" ] && break
+  PROBE="$(dirname "$PROBE")"
+done
+[ -n "$RUNS" ] || exit 0
 
 # 열린 장부 중 work.repo가 지정된 것 (가장 최근 1개)
 TARGET=$(python3 - "$RUNS" << 'PY' 2>/dev/null
