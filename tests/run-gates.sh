@@ -109,6 +109,11 @@ hook_exit "gate-spawn read-only 리뷰어 통과" 0 hooks/scripts/gate-spawn.sh 
 python3 -c "import json,sys; d=json.load(open('$L')); sys.exit(0 if any(v.get('gate')=='spawn' for v in d.get('boundary_violations',[])) else 1)" \
   && note "  PASS  gate-spawn 차단이 장부 boundary_violations에 기록" || { note "  FAIL  gate-spawn 장부 기록 없음"; FAIL=1; }
 hook_exit "gate-spawn 산문 혼합 write_scope(Y4 문형) 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"prose-owner\",\"prompt\":\"허용 도구: Read, Write, Bash(파일 읽기/검증용) / write_scope: repo/docs/** 및 repo/README.md에 안내 한두 줄 추가만 허용 (repo/fixtures/**, repo/manifest.json 쓰기 금지) / stop: maxTurns 20\"}}"
+hook_exit "gate-spawn 괄호 설명 끼운 표기(O2 문형) 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"steward\",\"prompt\":\"허용 도구: Read, Write.\\n- **write_scope (배타적 쓰기 소유권)**: \\u0060repo/contracts/**\\u0060 — 정확히 이 아래만. stop: maxTurns 20, done_when 완료\"}}"
+python3 -c "
+import json,sys; d=json.load(open('$L')); st=[x for x in d.get('declarations',[]) if x['agent']=='steward']
+sys.exit(0 if st and st[0]['write_scope']==['repo/contracts/**'] else 1)" \
+  && note "  PASS  괄호 설명 표기에서 write_scope 추출" || { note "  FAIL  괄호 설명 표기 추출 실패"; FAIL=1; }
 hook_exit "gate-spawn C5@spawn: 기존 선언(worker: schemas/**)과 겹치는 스폰 차단" 2 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"intruder\",\"prompt\":\"허용 도구: Read, Write. write_scope: schemas/user.schema.json. stop: maxTurns 5, done_when x\"}}"
 hook_exit "gate-spawn C5@spawn: 겹치지 않는 스폰 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Agent\",\"tool_input\":{\"name\":\"docs-owner\",\"prompt\":\"허용 도구: Read, Write. write_scope: docs/**. stop: maxTurns 5, done_when x\"}}"
 python3 -c "

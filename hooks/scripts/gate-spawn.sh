@@ -49,7 +49,8 @@ if not missing:
     # 지표 v2 자동화(R3): 선언된 경계를 장부에 기록 — violation-collector --ledger 가 사람 개입 없이 scopes를 구성한다
     scopes = []
     # 종결자: 여는 괄호 / 줄바꿈(\n 또는 JSON 이스케이프 \\n) / 'stop' / '허용' — '.'은 파일 확장자라 종결자로 쓰지 않는다 (R4 실측: CONVENTIONS.md → CONVENTIONS 절단)
-    m = re.search(r"write_scope\s*[:=]\s*\[?([^\]\n(]+?)(?:\]|\\n|\n|\s*\(|\s+stop\b|\s*/\s*stop|$)", p)
+    # "write_scope (배타적 쓰기 소유권)**:" 처럼 콜론 앞에 괄호·마크다운이 끼는 표기 허용 (O2 실측)
+    m = re.search(r"write_scope(?:\s*\([^)]{0,40}\))?\**\s*[:=]\s*\**\[?([^\]\n(]+?)(?:\]|\\n|\n|\s*\(|\s+stop\b|\s*/\s*stop|\s+—\s|$)", p)
     if m:
         # 산문 혼합 표기 대응(R4 실측: "repo/schemas/** 및 repo/CONVENTIONS.md에 규약 한두 줄 추가만 허용") — 경로형 토큰만 추출
         seg = m.group(1)
