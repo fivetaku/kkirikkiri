@@ -8,7 +8,9 @@
 
 > **Una sola frase. Un equipo de agentes de IA, montado y en marcha.**
 
-Describe lo que quieres en lenguaje natural. kkirikkiri te entrevista con 2–3 preguntas, escanea tu entorno, propone un equipo y lo ejecuta, todo dentro de Claude Code.
+Describe tu objetivo. kkirikkiri pregunta solo por decisiones pendientes y ejecuta el equipo o Workflow que apruebes, sin repetir información ya proporcionada.
+
+Los registros por sesión y las comprobaciones de aceptación evitan confundir cambios incidentales con trabajo terminado. El [preparador opcional](skills/kkirikkiri/references/prepare-team-pilot.md) genera tarjetas y solicitudes Agent desde un plan aprobado; no es un sandbox de permisos.
 
 [Inicio rápido](#inicio-rápido) • [¿Por qué kkirikkiri?](#por-qué-kkirikkiri) • [Cómo funciona](#cómo-funciona) • [Características](#características) • [Requisitos](#requisitos)
 
@@ -50,11 +52,11 @@ Describe lo que quieres en lenguaje natural. kkirikkiri te entrevista con 2–3 
 ## ¿Por qué kkirikkiri?
 
 - **Entra lenguaje natural, sale un equipo funcionando** —sin YAML ni definiciones de agentes que escribir a mano
-- **Guiado por entrevista** —2–3 preguntas concretas sustituyen a un largo formulario de configuración
+- **Entrevista** — pregunta solo por información pendiente que cambia el resultado
 - **Consciente del entorno** —detecta las herramientas instaladas (Codex CLI, Antigravity CLI `agy`, `.claude/agents/`) y monta el mejor equipo con lo que realmente tienes
 - **Multimodelo** —Claude, Codex CLI (código y análisis a gran escala) y Antigravity CLI (diseño/UI) pueden asumir roles distintos dentro del mismo equipo
 - **Dos sustratos de ejecución** —tú eliges: un equipo colaborando en vivo (Agent Teams) o una tubería de agentes determinista (Workflows) para trabajo masivo en paralelo
-- **Bucle de validación** —si el resultado de la ronda 1 se queda corto, el equipo se reintenta o se reconstruye automáticamente (hasta 3 rondas)
+- **Validación** — termina al cumplir los criterios; máximo dos rondas por defecto y aprobación explícita para continuar
 - **Memoria compartida** —los archivos de `.kkirikkiri/teams/{team_name}/` persisten entre rondas, así que un miembro de reemplazo retoma el contexto al instante; cada sesión usa su propio directorio para evitar colisiones entre sesiones simultáneas
 - **Agentes reutilizables** —guarda a los miembros del equipo en `.claude/agents/` para usarlos en proyectos futuros
 
@@ -68,16 +70,16 @@ El nombre viene del modismo coreano **끼리끼리** —*los afines se juntan de
 Natural language input
     → Step 1: Intent detection + preset matching
     → Step 2: Environment scan (parallel)
-    → Step 3: Interview — 2–3 AskUserQuestion prompts
+    → Step 3: Interview — missing consequential decisions only
     → Step 4: Dynamic team composition
     → Step 5: Team proposal + your confirmation
     → Step 6: Shared memory init + team execution
-    → Step 7: Quality validation loop (up to 3 rounds)
+    → Step 7: Quality validation (two rounds by default; approved extensions only)
     → Step 8: Result collection + report
 ```
 
 **Reglas del líder del equipo:**
-- El líder es siempre el modelo más capaz disponible (Opus por defecto)
+- La sesión anfitriona coordina por defecto; un Leader separado se añade solo con aprobación
 - El líder planifica, delega y valida; nunca escribe código directamente
 - Cada miembro tiene un rol con un alcance estrictamente acotado
 
@@ -118,7 +120,7 @@ Los equipos guardados se almacenan entre sesiones en `.kkirikkiri/shared/saved-t
 |-------|---------|
 | Ronda 1 | Ejecuta el equipo original |
 | Ronda 2 | Juicio automático: mantener (A) / reemplazo total (B) / cambio parcial (C) |
-| Ronda 3 | Reconstrucción completa del equipo, sin condiciones |
+| Rondas adicionales | Requieren aprobación; se corrigen solo los criterios pendientes |
 
 ### Soporte multimodelo
 

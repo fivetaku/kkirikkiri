@@ -5,8 +5,11 @@
 # 가드: cwd에 열린 kkirikkiri 장부가 없으면 즉시 exit 0 (다른 세션의 Agent 호출에 영향 없음).
 INPUT=$(cat)
 command -v python3 >/dev/null 2>&1 || exit 0
-python3 - "$INPUT" << 'PY'
-import json, sys, os, re, glob, datetime
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+python3 -B - "$INPUT" "$SCRIPT_DIR" << 'PY'
+import json, sys, os, re, datetime
+sys.path.insert(0, sys.argv[2])
+from gate_ledger import resolve_ledger, session_id
 try:
     d = json.loads(sys.argv[1])
 except Exception:
@@ -14,25 +17,10 @@ except Exception:
 if d.get("tool_name") not in ("Agent", "Task"):
     sys.exit(0)
 cwd = d.get("cwd") or os.getcwd()
-# cwd 드리프트 대응(2026-09-04 실측: 모델이 `cd repo` 후 스폰하면 훅 cwd가 하위 디렉토리) — 상위 5단계까지 장부 탐색
-runs = None
-probe = os.path.abspath(cwd); home = os.path.expanduser("~")
-for _ in range(6):
-    cand = os.path.join(probe, ".kkirikkiri", "runs")
-    if os.path.isdir(cand): runs = cand; break
-    if probe in (home, "/") or os.path.dirname(probe) == probe: break
-    probe = os.path.dirname(probe)
-if not runs:
+target = resolve_ledger(cwd, session_id(d))
+if not target:
     sys.exit(0)
-open_ledger = None
-for f in sorted(glob.glob(os.path.join(runs, "*.json")), reverse=True):
-    try:
-        x = json.load(open(f))
-        if x.get("outcome") in (None, {}): open_ledger = f; break
-    except Exception:
-        continue
-if not open_ledger:
-    sys.exit(0)
+open_ledger, _ = target
 ti = d.get("tool_input") or {}
 p = json.dumps(ti, ensure_ascii=False)
 has_tools = bool(re.search(r"(허용 도구|tools\s*[:=]|allowlist|read-?only|읽기 ?전용|review_mode)", p, re.I))
@@ -51,7 +39,19 @@ if not missing:
     # 종결자: 여는 괄호 / 줄바꿈(\n 또는 JSON 이스케이프 \\n) / 'stop' / '허용' — '.'은 파일 확장자라 종결자로 쓰지 않는다 (R4 실측: CONVENTIONS.md → CONVENTIONS 절단)
     # "write_scope (배타적 쓰기 소유권)**:" 처럼 콜론 앞에 괄호·마크다운이 끼는 표기 허용 (O2 실측)
     m = re.search(r"write_scope(?:\s*\([^)]{0,40}\))?\**\s*[:=]\s*\**\[?([^\]\n(]+?)(?:\]|\\n|\n|\s*\(|\s+stop\b|\s*/\s*stop|\s+—\s|$)", p)
-    if m:
+    canonical = re.search(r'(?m)^write_scope:\s*(\[(?:"[^\r\n]*|\s*)\])(?:\s+read-only)?\s*$', ti.get("prompt") or "")
+    if canonical:
+        try:
+            scopes = json.loads(canonical.group(1))
+            if not isinstance(scopes, list) or not all(
+                isinstance(scope, str) and scope and not os.path.isabs(scope)
+                and ".." not in scope.replace("\\", "/").split("/") for scope in scopes
+            ):
+                raise ValueError("expected relative scope strings")
+        except (ValueError, TypeError) as error:
+            print(f"[kkirikkiri gate-spawn] invalid structured write_scope: {error}", file=sys.stderr)
+            sys.exit(2)
+    elif m:
         # 산문 혼합 표기 대응(R4 실측: "repo/schemas/** 및 repo/CONVENTIONS.md에 규약 한두 줄 추가만 허용") — 경로형 토큰만 추출
         seg = m.group(1)
         # "…는 읽기만/수정 금지/read-only" 뒤에 오는 경로는 쓰기 범위가 아니다 — 그 마커 앞까지만 본다 (Y4 reconciler 실측)

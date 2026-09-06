@@ -75,8 +75,7 @@ function globsOverlap(a, b) {
   return ra.test(litB) || rb.test(litA);
 }
 
-function lintCard(file) {
-  const text = fs.readFileSync(file, 'utf8');
+function lintCard(file, text = fs.readFileSync(file, 'utf8')) {
   const fm = parseFrontmatter(text);
   const violations = [];
   const V = (rule, msg) => violations.push({ rule, msg });
@@ -120,6 +119,7 @@ function lintCard(file) {
   return { file, frontmatter: fm, violations };
 }
 
+function main() {
 const files = collectFiles();
 if (files.length === 0) {
   console.log(JSON.stringify({ pass: false, cards: [], cross_violations: [],
@@ -127,7 +127,7 @@ if (files.length === 0) {
   process.exit(2);
 }
 
-const cards = files.map(lintCard);
+const cards = files.map(file => lintCard(file));
 
 // C5: 카드 간 write_scope 배타성 (H1 핵심 — scope_overlap을 spawn 전에 차단)
 const cross = [];
@@ -155,3 +155,7 @@ const report = {
 };
 console.log(JSON.stringify(report, null, 2));
 process.exit(report.pass ? 0 : 1);
+}
+
+module.exports = { lintCard };
+if (require.main === module) main();

@@ -35,7 +35,11 @@ Workflow 도구 호출 시 `tool_input.script`(또는 scriptPath)를 자동 린�
 
 ## 0. 런 컨텍스트는 훅이 만든다 (UserPromptSubmit `gate-init.sh`, v0.24.2)
 
-`/kkirikkiri …` 프롬프트가 들어오면 **훅이** `.kkirikkiri/runs/<ts>.json` 장부를 생성한다(열린 장부가 이미 있으면 재사용). 작업 repo는 cwd가 git이면 cwd, 아니면 cwd 직속 하위 git repo가 정확히 1개일 때 그것으로 자동 추정해 `work.repo`에 넣고, 보고서 기본 경로는 `<cwd>/output/report.md`.
+`/kkirikkiri …` 프롬프트가 들어오면 훅이 `.kkirikkiri/runs/<ts>_<uuid>.json`을 생성한다. `session_id` 또는 `sessionId`를 정규화해 저장하고 같은 세션의 열린 장부만 재사용한다. cwd에서 다섯 상위 디렉터리까지 탐색하며 일치하는 장부가 둘 이상이면 모호성 오류로 차단한다. 식별 세션이 다른 세션이나 소유자 없는 장부로 폴백하지 않는다. ID 없는 레거시 호출은 유일한 소유자 없는 장부만 지원한다.
+
+작업 repo는 `.git` 파일인 worktree도 인식한다. 식별된 새 세션은 `work.contract`를
+`.kkirikkiri/contracts/<run-id>.json`, `work.report`를 `output/<run-id>/report.md`로 지정한다.
+작업 디렉터리 이름과 플랫폼 팀 이름은 별개다.
 - 이유(실측 2026-09-04): 장부·카드 같은 "모델이 만들어야 하는 아티팩트"에 걸린 훅은 모델이 그걸 안 만들면 무력하다(T런 2/2 카드·장부 0건). 컨텍스트 수립을 하네스로 옮겨 아래 gate-spawn/gate-done이 항상 대상을 갖게 한다.
 - 오케스트레이터는 이 장부를 **덮어쓰지 말고 채운다**(diagnosis·spec·lint_report·outcome). `work.repo` 추정이 틀렸으면 고쳐 쓴다.
 
@@ -62,14 +66,43 @@ gate-spawn은 통과 시 선언을 장부 `declarations[{agent, write_scope, rea
 
 ## 3. done-gate — 완료 직전 (Stop 훅 `gate-done.sh`)
 
-cwd의 `.kkirikkiri/runs/*.json` 중 `outcome`이 비어 있고 `work.repo`가 지정된 장부가 있으면, 세션 종료 시 자동으로 done-gate를 돌린다.
-- 변경 있음 → 통과(diff --stat이 `outcome_gate`에 기록됨 — 완료 보고에 동봉).
-- 변경 없음 → 보고서(`work.report`, 기본 `<repo>/output/report.md`)에 `## 무변경 종료 심사` 블록이 추적 파일 전수를 3열 표(파일 / 검사 내용 / 변경 불요 근거)로 커버해야 통과. 아니면 **종료 차단** — 정비를 하거나 심사를 채운다.
-- 근거: 무행동 종료 런이 0→1→2→3/4로 늘고 품질 −3.8점(2026-09-01). "점검했더니 이상 없음"은 증명 대상이다.
+현재 세션의 열린 장부에 `work.repo`가 지정돼 있으면 종료 시 done-gate를 실행한다.
+새 식별 세션의 `work.contract`는 실행 전에 승인한 완료 기준으로 채운다:
+
+```json
+{
+  "version": 1,
+  "session_id": "현재 호스트 세션 ID",
+  "mode": "implementation",
+  "artifacts": ["src/feature.js", "tests/feature.test.js"],
+  "criteria": [
+    {"id": "feature-behavior", "argv": ["node", "--test", "tests/feature.test.js"]}
+  ]
+}
+```
+
+- `mode`는 `implementation`, `analysis`, `no-change` 중 하나다. 읽기 전용 조사나
+  무변경 판단도 요청한 결과 파일과 검사 가능한 기준을 제시하며, 파일 변경을 강제하지 않는다.
+- criterion ID는 유일해야 한다. argv 배열은 셸 해석 없이 작업 repo에서 실행되며
+  개별 30초·전체 45초 중 먼저 도달하는 예산을 적용한다. Stop 훅은 60초로 두어
+  결과 기록 시간을 남긴다. 남은 예산이 없으면 이후 검사는 미실시/실패로 남긴다.
+  출력은 끝 4,000자로 제한해 장부에 기록한다.
+- 보고서가 없거나 비어 있으면 실패한다. 결과 파일은 repo 내부의 실제 파일이어야 하며
+  경로 이탈·외부 심볼릭 링크는 허용하지 않는다.
+- 모든 기준을 실제 실행해 exit 0이어야 `criteria_passed`다. 계약·보고서·결과 파일의
+  해시를 기록하고, 검증 도중 이 입력이 바뀌면 안정된 상태에서 다시 검증한다.
+- 기준이 자연어 품질 판단이면 승인된 품질 검증 결과를 검사하는 명령으로 연결한다.
+  파일 존재 검사만으로 의미적 품질이 검증됐다고 주장하지 않는다. 적절한 검사가
+  없으면 미검증으로 남겨야 한다.
+- Stop의 무한루프 방지용 차단 한도는 **종료 허용**이지 성공이 아니다.
+  마지막 `outcome_gate`가 실패면 미완료/미해결로 보고한다.
+
+`work.contract`가 없는 기존 수동/레거시 장부의 변경·무변경 심사 경로는 호환을 위해
+남긴다. 이 경로는 요청별 완료 기준 실행을 증명하지 않는다. 새 실행에서는 계약 경로를 사용한다.
 
 **장부에 `work` 블록을 반드시 기록해야 훅이 대상을 안다** (W1 또는 팀 구성 시):
 ```json
-"work": {"repo": "/abs/path/to/target-repo", "report": "/abs/path/to/output/report.md"}
+"work": {"repo": "/abs/path/to/target-repo", "report": "/abs/path/to/output/run-id/report.md", "contract": "/abs/path/to/.kkirikkiri/contracts/run-id.json"}
 ```
 
 ## 회귀·검증

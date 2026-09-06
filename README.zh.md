@@ -8,7 +8,9 @@
 
 > **一句话就够了。一支 AI 智能体团队，自动组建并开始运行。**
 
-用平常的语言描述你想做什么。kkirikkiri 会通过 2–3 个问题采访你，扫描你的环境，提出团队方案并执行——全部在 Claude Code 内完成。
+用自然语言描述目标。kkirikkiri 只询问尚未确定的重要事项，然后执行你批准的团队或 Workflow，不重复已回答的问题。
+
+按会话隔离台账并执行验收检查，避免把无关文件变动当作完成。[可选准备工具](skills/kkirikkiri/references/prepare-team-pilot.md)从同一份已批准计划生成卡片和 Agent 请求，并非运行时权限沙箱。
 
 [快速开始](#快速开始) • [为什么选 kkirikkiri？](#为什么选-kkirikkiri) • [工作原理](#工作原理) • [功能](#功能) • [环境要求](#环境要求)
 
@@ -50,11 +52,11 @@
 ## 为什么选 kkirikkiri？
 
 - **输入自然语言，产出运行中的团队** —— 不用写 YAML，也不用手写智能体定义文件
-- **采访驱动** —— 用 2–3 个精准的问题取代冗长的配置表单
+- **访谈驱动** —— 仅询问影响结果的未定事项，不重复已有答案
 - **感知环境** —— 检测已安装的工具（Codex CLI、Antigravity CLI `agy`、`.claude/agents/`），基于你实际拥有的资源组建最优团队
 - **多模型** —— Claude、Codex CLI（代码与大规模分析）、Antigravity CLI（设计/UI）可以在同一支团队中各自承担不同角色
 - **两种执行基座** —— 由你选择：实时协作团队（Agent Teams），或面向大批量扇出工作的确定性智能体流水线（Workflows）
-- **验证循环** —— 如果第 1 轮产出不达标，团队会自动重试或重建（最多 3 轮）
+- **验证循环** —— 达到验收标准即结束；默认最多2轮，追加轮次需明确批准
 - **共享内存** —— `.kkirikkiri/teams/{team_name}/` 中的文件跨轮次保留，替换上场的团队成员能立即接续上下文；每个会话使用独立目录，避免多会话冲突
 - **智能体可复用** —— 把团队成员保存到 `.claude/agents/`，供未来的项目使用
 
@@ -68,16 +70,16 @@
 Natural language input
     → Step 1: Intent detection + preset matching
     → Step 2: Environment scan (parallel)
-    → Step 3: Interview — 2–3 AskUserQuestion prompts
+    → Step 3: Interview — missing consequential decisions only
     → Step 4: Dynamic team composition
     → Step 5: Team proposal + your confirmation
     → Step 6: Shared memory init + team execution
-    → Step 7: Quality validation loop (up to 3 rounds)
+    → Step 7: Quality validation (two rounds by default; approved extensions only)
     → Step 8: Result collection + report
 ```
 
 **队长规则：**
-- 队长永远由可用的最强模型担任（默认 Opus）
+- 当前宿主会话默认负责协调；仅在批准后添加独立 Leader
 - 队长只做计划、分派和验证——从不直接写代码
 - 每位成员的角色都有严格边界
 
@@ -118,7 +120,7 @@ Natural language input
 |-------|---------|
 | 第 1 轮 | 原班团队执行 |
 | 第 2 轮 | 自动判定：保留（A）/ 整体换血（B）/ 部分替换（C） |
-| 第 3 轮 | 无条件重建整支团队 |
+| 追加轮次 | 明确批准后，只修复未满足的验收标准 |
 
 ### 多模型支持
 

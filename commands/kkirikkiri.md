@@ -82,14 +82,13 @@ After user selection:
 
 ## Execute
 
-Read the skill and reference files, then follow the workflow:
+Read the skill, then load references only when the selected step needs them:
 
 1. Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/SKILL.md`
-2. Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/presets.md`
-3. Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/interview-guide.md`
-4. Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/metaphor-guide.md`
-5. If PM/product preset matched → also Read `${CLAUDE_PLUGIN_ROOT}/skills/kkirikkiri/references/pm-frameworks.md`
-6. Follow SKILL.md's workflow with user's request: `$ARGUMENTS`
+2. Follow SKILL.md's workflow with user's request: `$ARGUMENTS`. Do not eagerly
+   preload interview or metaphor references when the request already answers
+   those questions. Within one preparation attempt, reuse unchanged references
+   already read by this session; workers still receive their own required context.
    - Step 3.5에서 사용자가 실행 방식을 고른다: **Agent Teams** 또는 **Workflow**
    - Agent Teams → Step 4~8 (팀 구성·실행·Ralph 검증)
    - Workflow → Step 4-W/6-W/7-W/8-W (워크플로우 스크립트 구성·실행·내부 검증)

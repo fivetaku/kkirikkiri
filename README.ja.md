@@ -8,7 +8,9 @@
 
 > **一言で十分。AI エージェントチームが編成され、動き出す。**
 
-やりたいことを普段の言葉で伝えるだけ。kkirikkiri が 2〜3 個の質問でインタビューし、環境をスキャンし、チームを提案して実行します——すべて Claude Code の中で完結します。
+やりたいことを伝えると、既に答えた内容は繰り返さず、必要な判断だけを確認して承認済みのチームまたは Workflow を実行します。
+
+セッション別台帳と受け入れ検査を使用します。[任意の準備ツール](skills/kkirikkiri/references/prepare-team-pilot.md)は承認済み計画からカードと Agent 要求を生成します。実行時の権限サンドボックスではありません。
 
 [クイックスタート](#クイックスタート) • [なぜ kkirikkiri なのか](#なぜ-kkirikkiri-なのか) • [仕組み](#仕組み) • [機能](#機能) • [動作要件](#動作要件)
 
@@ -50,11 +52,11 @@
 ## なぜ kkirikkiri なのか
 
 - **自然言語を入れると、動くチームが出てくる** —— YAML もエージェント定義ファイルも手書き不要
-- **インタビュー駆動** —— 長い設定フォームの代わりに、的を絞った 2〜3 個の質問でチームを設計
+- **インタビュー** — 結果に影響する未確定事項だけを確認し、回答済みの質問は繰り返しません
 - **環境認識** —— インストール済みのツール（Codex CLI、Antigravity CLI `agy`、`.claude/agents/`）を検出し、実際に使えるリソースから最適なチームを構成
 - **マルチモデル** —— Claude、Codex CLI（コード・大規模分析）、Antigravity CLI（デザイン/UI）が同じチーム内でそれぞれ異なる役割を担当
 - **2 つの実行基盤** —— ユーザーが選択：リアルタイムに協調するチーム（Agent Teams）か、大量ファンアウト作業向けの決定論的エージェントパイプライン（Workflows）か
-- **検証ループ** —— 1 ラウンド目の成果が不十分なら、チームを自動でリトライまたは再編成（最大 3 ラウンド）
+- **検証ループ** — 受け入れ基準を満たせば終了。既定は最大2ラウンドで、追加には明示的な承認が必要です
 - **共有メモリ** —— `.kkirikkiri/teams/{team_name}/` のファイルがラウンドをまたいで保持され、交代したメンバーも即座に文脈を引き継げる。セッションごとに独立ディレクトリを使うため、マルチセッションでも衝突しない
 - **エージェントの再利用** —— チームメンバーを `.claude/agents/` に保存して、今後のプロジェクトでも利用可能
 
@@ -68,16 +70,16 @@
 Natural language input
     → Step 1: Intent detection + preset matching
     → Step 2: Environment scan (parallel)
-    → Step 3: Interview — 2–3 AskUserQuestion prompts
+    → Step 3: Interview — missing consequential decisions only
     → Step 4: Dynamic team composition
     → Step 5: Team proposal + your confirmation
     → Step 6: Shared memory init + team execution
-    → Step 7: Quality validation loop (up to 3 rounds)
+    → Step 7: Quality validation (two rounds by default; approved extensions only)
     → Step 8: Result collection + report
 ```
 
 **チームリーダーの原則:**
-- リーダーは常に、利用可能な中で最も高性能なモデル（デフォルトは Opus）
+- 現在のホストセッションが既定の調整役です。別の Leader は承認された場合だけ追加します
 - リーダーは計画・委任・検証のみ——コードを直接書かない
 - 各メンバーの役割は厳密にスコープが区切られている
 
@@ -118,7 +120,7 @@ Natural language input
 |-------|---------|
 | ラウンド 1 | 元のチームが実行 |
 | ラウンド 2 | 自動判定：維持（A）/ 全面交代（B）/ 部分入れ替え（C） |
-| ラウンド 3 | 無条件でチームを全面再編成 |
+| 追加ラウンド | 明示的な承認後、未達の基準だけを補強 |
 
 ### マルチモデル対応
 

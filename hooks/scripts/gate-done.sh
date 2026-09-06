@@ -8,46 +8,43 @@ command -v node >/dev/null 2>&1 || exit 0
 command -v python3 >/dev/null 2>&1 || exit 0
 
 # stop_hook_active(훅으로 재개된 턴의 종료)면 **평가는 하되 차단은 하지 않는다** — 최종 상태를 장부·로그에 남기기 위해 (R4 실측: 조기 exit 0은 최종 판정 공백을 만들었다)
-ACTIVE=$(printf '%s' "$INPUT" | python3 -c 'import json,sys
-try: d=json.load(sys.stdin)
-except Exception: print("0"); sys.exit(0)
-print("1" if d.get("stop_hook_active") else "0")' 2>/dev/null)
-CWD=$(printf '%s' "$INPUT" | python3 -c 'import json,sys
-try: d=json.load(sys.stdin)
-except Exception: sys.exit(0)
-print(d.get("cwd") or "")' 2>/dev/null)
-[ -n "$CWD" ] || CWD="$PWD"
-# cwd 드리프트 대응 — 상위 5단계까지 .kkirikkiri/runs 탐색 (모델이 cd 한 상태로 종료하는 경우)
-RUNS=""; PROBE="$CWD"
-for _ in 1 2 3 4 5 6; do
-  if [ -d "$PROBE/.kkirikkiri/runs" ]; then RUNS="$PROBE/.kkirikkiri/runs"; break; fi
-  [ "$PROBE" = "$HOME" ] || [ "$PROBE" = "/" ] && break
-  PROBE="$(dirname "$PROBE")"
-done
-[ -n "$RUNS" ] || exit 0
-
-# 열린 장부 중 work.repo가 지정된 것 (가장 최근 1개)
-TARGET=$(python3 - "$RUNS" << 'PY' 2>/dev/null
-import json, sys, os, glob
-runs = sys.argv[1]
-for f in sorted(glob.glob(os.path.join(runs, "*.json")), reverse=True):
-    try: d = json.load(open(f))
-    except Exception: continue
-    if d.get("outcome") not in (None, {}): continue
-    w = d.get("work") or {}
-    repo = w.get("repo"); report = w.get("report")
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TARGET=$(python3 -B - "$INPUT" "$SCRIPT_DIR" << 'PY'
+import json, sys, os
+sys.path.insert(0, sys.argv[2])
+from gate_ledger import resolve_ledger, session_id
+try:
+    d = json.loads(sys.argv[1])
+except Exception:
+    sys.exit(0)
+cwd = d.get("cwd") or os.getcwd()
+target = resolve_ledger(cwd, session_id(d))
+if target:
+    path, ledger = target
+    work = ledger.get("work") or {}
+    repo = work.get("repo")
     if repo and os.path.isdir(repo):
-        print(f); print(repo); print(report or "")
-        break
+        print(path); print(repo); print(work.get("report") or "")
+        print(cwd); print("1" if d.get("stop_hook_active") else "0")
+        print(work.get("contract") or ""); print(session_id(d) or "")
 PY
 )
+RC=$?
+[ "$RC" -eq 0 ] || exit "$RC"
 [ -n "$TARGET" ] || exit 0
 LEDGER=$(printf '%s\n' "$TARGET" | sed -n 1p)
 REPO=$(printf '%s\n' "$TARGET" | sed -n 2p)
 REPORT=$(printf '%s\n' "$TARGET" | sed -n 3p)
+CWD=$(printf '%s\n' "$TARGET" | sed -n 4p)
+ACTIVE=$(printf '%s\n' "$TARGET" | sed -n 5p)
+CONTRACT=$(printf '%s\n' "$TARGET" | sed -n 6p)
+SESSION=$(printf '%s\n' "$TARGET" | sed -n 7p)
 [ -n "$REPORT" ] || REPORT="$REPO/output/report.md"
 
-OUT=$(node "$ROOT/scripts/done-gate.js" --repo "$REPO" --report "$REPORT" 2>/dev/null)
+EXTRA=()
+[ -n "$CONTRACT" ] && EXTRA+=(--contract "$CONTRACT")
+[ -n "$SESSION" ] && EXTRA+=(--session-id "$SESSION")
+OUT=$(node "$ROOT/scripts/done-gate.js" --repo "$REPO" --report "$REPORT" "${EXTRA[@]}" 2>/dev/null)
 RC=$?
 mkdir -p "$HOME/.cache/kkirikkiri" 2>/dev/null
 VERDICT=$([ "$RC" -eq 0 ] && echo pass || { [ "$ACTIVE" = "1" ] && echo "final-unjustified" || echo block; })

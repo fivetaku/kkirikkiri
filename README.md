@@ -8,7 +8,9 @@ English | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](READM
 
 > **One sentence. A team of AI agents, assembled and running.**
 
-Describe what you want in plain language. kkirikkiri interviews you with 2–3 questions, scans your environment, proposes a team, and executes — all within Claude Code.
+Describe your goal in plain language. kkirikkiri asks only for missing decisions, scans your environment, and runs the team or Workflow you approve.
+
+Session-owned ledgers and acceptance checks prevent incidental changes from counting as completion. The [opt-in preparation pilot](skills/kkirikkiri/references/prepare-team-pilot.md) generates cards and Agent requests from one approved plan; it is not a runtime permission sandbox.
 
 [Quick Start](#quick-start) • [Why kkirikkiri?](#why-kkirikkiri) • [How it works](#how-it-works) • [Features](#features) • [Requirements](#requirements)
 
@@ -50,11 +52,11 @@ Describe what you want in plain language. kkirikkiri interviews you with 2–3 q
 ## Why kkirikkiri?
 
 - **Natural language in, running team out** — no YAML, no agent definitions to write by hand
-- **Interview-driven** — 2–3 targeted questions replace a long configuration form
+- **Interview-driven** — asks only for consequential information not already supplied
 - **Environment-aware** — detects installed tools (Codex CLI, Antigravity CLI `agy`, `.claude/agents/`) and builds the best team from what you actually have
 - **Multi-model** — Claude, Codex CLI (code & large-scale analysis), and Antigravity CLI (design/UI) can each take different roles in the same team
 - **Two execution substrates** — you pick: a live collaborating team (Agent Teams) or a deterministic agent pipeline (Workflows) for high-volume fan-out work
-- **Validation loop** — if round 1 output falls short, the team is automatically retried or rebuilt (up to 3 rounds)
+- **Validation loop** — stop when acceptance passes; at most two rounds by default, with explicit approval for more
 - **Shared memory** — `.kkirikkiri/teams/{team_name}/` files persist across rounds so a replacement team picks up context immediately; each session gets its own directory to prevent multi-session collisions
 - **Reusable agents** — save team members to `.claude/agents/` for use in future projects
 
@@ -68,16 +70,16 @@ The name comes from the Korean idiom **끼리끼리** — *like-minded people na
 Natural language input
     → Step 1: Intent detection + preset matching
     → Step 2: Environment scan (parallel)
-    → Step 3: Interview — 2–3 AskUserQuestion prompts
+    → Step 3: Interview — missing consequential decisions only
     → Step 4: Dynamic team composition
     → Step 5: Team proposal + your confirmation
     → Step 6: Shared memory init + team execution
-    → Step 7: Quality validation loop (up to 3 rounds)
+    → Step 7: Quality validation (two rounds by default; approved extensions only)
     → Step 8: Result collection + report
 ```
 
 **Team leader rules:**
-- Leader is always the most capable model available (Opus by default)
+- The current host session coordinates by default; a separate Leader is optional, not automatically spawned
 - Leader plans, delegates, and validates — never writes code directly
 - Each member has a strictly scoped role
 
@@ -118,7 +120,7 @@ Saved teams are stored cross-session under `.kkirikkiri/shared/saved-teams/`. If
 |-------|---------|
 | Round 1 | Original team executes |
 | Round 2 | Auto-judge: keep (A) / full replacement (B) / partial swap (C) |
-| Round 3 | Full team rebuild, unconditionally |
+| Additional rounds | Explicit approval required; repair only unresolved criteria |
 
 ### Multi-model support
 

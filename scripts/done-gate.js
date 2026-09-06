@@ -7,6 +7,8 @@
 // 근거: H1 재측정(2026-09-01) — 무행동 런 0→1→2 증가, 품질 −3.8점. 무변경 결론은 공짜가 아니라 증명 대상이다.
 'use strict';
 const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
 const args = process.argv.slice(2);
@@ -14,10 +16,99 @@ function opt(name) { const i = args.indexOf('--' + name); return i === -1 ? unde
 const repo = opt('repo');
 const reportPath = opt('report');
 const base = opt('base') || 'HEAD';
+const contractPath = opt('contract');
 if (!repo || !reportPath) {
   console.log(JSON.stringify({ pass: false, verdict: 'usage_error',
     msg: '--repo <dir> --report <md> 필수' }, null, 2));
   process.exit(2);
+}
+
+if (contractPath) {
+  const budgetMs = Number(opt('budget-ms') || 45000);
+  const deadline = Date.now() + budgetMs;
+  const checks = [];
+  const violations = [];
+  const artifacts = [];
+  let reportHash;
+  let contractHash;
+  let contract;
+  const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+  try {
+    if (!Number.isInteger(budgetMs) || budgetMs < 1 || budgetMs > 45000) {
+      throw new Error('budget-ms must be an integer from 1 to 45000');
+    }
+    contractHash = hash(contractPath);
+    contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+    if (contract.version !== 1 || !['implementation', 'analysis', 'no-change'].includes(contract.mode)
+        || !Array.isArray(contract.criteria) || contract.criteria.length === 0
+        || !Array.isArray(contract.artifacts) || contract.artifacts.length === 0) {
+      throw new Error('version, mode, nonempty criteria and artifacts are required');
+    }
+    if (opt('session-id') && contract.session_id !== opt('session-id')) {
+      throw new Error('completion contract belongs to another session');
+    }
+    const ids = new Set();
+    for (const criterion of contract.criteria) {
+      if (typeof criterion.id !== 'string' || !criterion.id.trim() || ids.has(criterion.id)
+          || !Array.isArray(criterion.argv) || criterion.argv.length === 0
+          || !criterion.argv.every(arg => typeof arg === 'string') || !criterion.argv[0]) {
+        throw new Error('criteria need unique IDs and executable argv arrays');
+      }
+      ids.add(criterion.id);
+    }
+    if (!fs.statSync(reportPath).isFile() || !fs.readFileSync(reportPath, 'utf8').trim()) {
+      throw new Error('a nonempty result report is required');
+    }
+    reportHash = hash(reportPath);
+    const root = fs.realpathSync(repo);
+    for (const relative of contract.artifacts) {
+      if (typeof relative !== 'string' || !relative || path.isAbsolute(relative)
+          || relative.split(/[/\\]/).includes('..')) throw new Error('artifacts must be repo-relative files');
+      const file = fs.realpathSync(path.resolve(root, relative));
+      const local = path.relative(root, file);
+      if (path.isAbsolute(local) || local === '..' || local.startsWith('..' + path.sep)
+          || !fs.statSync(file).isFile()) throw new Error('artifact escapes repository or is not a file');
+      artifacts.push({ path: relative, sha256: hash(file) });
+    }
+  } catch (error) {
+    violations.push({ rule: 'D4-completion-contract', msg: error.message });
+  }
+  if (violations.length === 0) {
+    for (const criterion of contract.criteria) {
+      const started = Date.now();
+      const remaining = deadline - started;
+      if (remaining <= 0) {
+        checks.push({ id: criterion.id, argv: criterion.argv, passed: false, skipped: true,
+          exitCode: null, durationMs: 0, error: 'total validation budget exhausted' });
+        continue;
+      }
+      try {
+        const output = execFileSync(criterion.argv[0], criterion.argv.slice(1), {
+          cwd: repo, encoding: 'utf8', timeout: Math.min(30000, remaining), maxBuffer: 1024 * 1024,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        checks.push({ id: criterion.id, argv: criterion.argv, passed: true, exitCode: 0,
+          durationMs: Date.now() - started, output: output.slice(-4000) });
+      } catch (error) {
+        checks.push({ id: criterion.id, argv: criterion.argv, passed: false,
+          exitCode: Number.isInteger(error.status) ? error.status : null,
+          durationMs: Date.now() - started, error: String(error.stderr || error.message).slice(-4000) });
+      }
+    }
+    try {
+      if (hash(contractPath) !== contractHash || hash(reportPath) !== reportHash
+          || artifacts.some(item => hash(path.resolve(repo, item.path)) !== item.sha256)) {
+        violations.push({ rule: 'D5-input-changed', msg: 'contract/report/artifact changed during validation; rerun on a stable snapshot' });
+      }
+    } catch (error) {
+      violations.push({ rule: 'D5-input-changed', msg: error.message });
+    }
+  }
+  const pass = violations.length === 0 && checks.length > 0 && checks.every(check => check.passed);
+  console.log(JSON.stringify({ pass, verdict: pass ? 'criteria_passed' : 'criteria_unverified',
+    mode: contract?.mode, budget_ms: budgetMs, contract_sha256: contractHash, report_sha256: reportHash,
+    checks, artifacts, violations, msg: pass ? '요청별 검사를 실행해 통과함' : '요청별 완료 기준이 검증되지 않음' }, null, 2));
+  process.exit(pass ? 0 : 1);
 }
 
 const diffStat = execFileSync('git', ['-C', repo, 'diff', '--stat', base], { encoding: 'utf8' }).trim();
