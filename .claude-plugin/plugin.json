@@ -1,7 +1,7 @@
 {
   "name": "kkirikkiri",
-  "version": "0.25.0",
-  "description": "Natural language team builder for Claude Code — one sentence becomes an AI team (Agent Teams) or a deterministic agent pipeline (Workflows). User picks the execution substrate; models are tiered (Opus lead/judge, Sonnet workers, cross-model review via Codex/agy)",
+  "version": "0.26.0",
+  "description": "Natural language team builder for Claude Code — choose Agent Teams or Workflows and select Fable, Opus, Sonnet, or per-role models. Preserves approved model assignments; Haiku is opt-in.",
   "author": {
     "name": "fivetaku",
     "url": "https://github.com/fivetaku"

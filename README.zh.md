@@ -87,6 +87,14 @@ Natural language input
 
 ## 功能
 
+### 选择工作模型
+
+Teams 和 Workflow 在配置确认时提供 Fable 为主、Opus 为主、Sonnet 为主或按角色
+指定。已指定的模型不重复询问，实际分配会保存并保持一致。模型不可用时不会擅自
+替换，也不会改变宿主模型。[选择规则](skills/kkirikkiri/references/model-selection.md)
+推荐选项会标记。Fable 通过宿主支持的 `fable` 别名调用，实际响应的模型 ID 单独记录，
+不保证固定版本。Haiku 仅在明确指定时使用。
+
 ### 预设
 
 内置 5 种预设，通过自然语言触发词匹配：

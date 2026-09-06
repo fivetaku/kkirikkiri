@@ -87,6 +87,17 @@ Natural language input
 
 ## Features
 
+### Choose worker models
+
+Both Teams and Workflow include a model question in the existing configuration
+approval: Fable-centered, Opus-centered, Sonnet-centered, or per-role choices.
+The recommended option is marked; Fable requires a host supporting the native
+`fable` alias. Observed runtime model IDs are recorded separately; this is not an
+exact-version pin. Haiku is used only when explicitly requested.
+Already specified models are not asked again. Exact assignments are recorded and
+preserved; unavailable models are not silently substituted. The host model is
+unchanged. See the [model selection contract](skills/kkirikkiri/references/model-selection.md).
+
 ### Presets
 
 Five built-in presets with natural-language trigger matching:

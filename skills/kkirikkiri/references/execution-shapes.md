@@ -6,6 +6,11 @@
 Step 4-W가 스크립트를 짤 때, 태스크의 **모양**을 아래 5종 중에서 고른다.
 Step 4-W의 기존 규칙(**모델 핀 필수 / adversarial-verify 필수 / schema 강제**)은 5종 전부에 그대로 적용된다.
 
+**모델은 사용자 선택 우선**: 아래 Sonnet/Opus 리터럴은 추천 조합의 예시다.
+`model-selection.md`에서 선택받은 phase별 모델로 치환한 뒤 실행한다. 검증·부모·shim
+역할도 예외가 아니다. 선택한 모델이 사용 불가하면 임의 대체하지 않고 다시 선택받는다.
+Haiku는 기본 추천에서 제외하고 사용자 명시 요청 때만 사용한다.
+
 ---
 
 ## 5종 요약
@@ -97,7 +102,7 @@ return await agent(`검증 통과 결과만으로 부모 결론을 내라: ...`,
                    {model: 'opus', phase: '부모'})
 ```
 
-부모는 전체를 한 번에 보는 종합이므로 `opus` — 워크플로우당 1~2회 한도 안에서 쓴다.
+부모의 종합 작업에는 Opus를 추천할 수 있지만, 실제 값은 사용자가 선택한 모델을 따른다.
 
 ---
 
@@ -132,11 +137,12 @@ Workflow 스크립트에는 셸·파일시스템 접근이 없다. 외부 CLI에
 
 ```
 Workflow 스크립트
-  └─ agent("run-cli.sh로 <provider> 실행하고 JOB_DIR 반환", {model: 'haiku'})   ← shim
+  └─ agent("run-cli.sh로 <provider> 실행하고 JOB_DIR 반환", {model: 'sonnet'})   ← shim
        └─ Bash: run-cli.sh start --provider <p> --prompt-file ...
 ```
 
-shim에는 **판단을 주지 않는다.** 명령 실행과 경로 반환만 시킨다 (그래서 `haiku`).
+shim에는 **판단을 주지 않는다.** 명령 실행과 경로 반환만 시키며 기본 모델은 Sonnet이다.
+사용자가 전체 또는 해당 단계 모델을 지정했다면 그 선택을 따른다.
 
 ### 5-3. 골격
 
@@ -178,7 +184,7 @@ const scored = (await parallel(CONTENDERS.map(c => () =>
       `       **로그 잡음으로 승자를 갈랐다**.`,
       `결과를 스키마대로 반환한다. 판단하지 말고 실행 결과만 담는다.`,
     ].join('\n'),
-    { model: 'haiku', phase: '대진', label: `arena:${c.provider}`, schema: SCORE_SCHEMA }
+    { model: 'sonnet', phase: '대진', label: `arena:${c.provider}`, schema: SCORE_SCHEMA }
   ).then(r => r && ({ ...r, provider: c.provider, worktree: c.worktree }))
 ))).filter(Boolean)
 

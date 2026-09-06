@@ -5,9 +5,9 @@
 // 규칙 근거: 2026-08-29 팬아웃 실측 결함 + PRD/kkirikkiri-structural-team-builder
 'use strict';
 const fs = require('fs');
+const { validateSelection } = require('./model-selection.js');
 
-function readInput() {
-  const p = process.argv[2];
+function readInput(p) {
   if (p && p !== '-') return { text: fs.readFileSync(p, 'utf8'), name: p };
   return { text: fs.readFileSync(0, 'utf8'), name: '<stdin>' };
 }
@@ -25,10 +25,172 @@ function balancedSlice(text, openIdx, open = '(', close = ')', cap = 2000) {
   return text.slice(openIdx, openIdx + cap); // 못 닫으면 cap까지 (근사)
 }
 
-function lint(text) {
+// Selection-only scanner, not a general JS parser. Groups, comments, strings and
+// template interpolations are separated before examining the second argument.
+// Disambiguate ordinary regex/division; reject ambiguous slash contexts and
+// escaped/non-ASCII identifiers. Literal phase/model values use unescaped quotes. Opaque
+// callees and dynamic code loading are unsupported; this is not a JS sandbox.
+function selectedCalls(text) {
+  let pos = 0;
+  const fail = message => { throw new Error(`offset ${pos}: ${message}`); };
+  function tokens(end) {
+    const result = [];
+    while (pos < text.length) {
+      const c = text[pos], idx = pos;
+      if (/\s/.test(c)) { pos++; continue; }
+      if (end && c === end) { pos++; return result; }
+      if (text.startsWith('//', pos)) {
+        while (pos < text.length && !/[\r\n\u2028\u2029]/.test(text[pos])) pos++;
+        continue;
+      }
+      if (text.startsWith('/*', pos)) {
+        const close = text.indexOf('*/', pos + 2);
+        if (close < 0) fail('unterminated comment');
+        pos = close + 2;
+        continue;
+      }
+      if (c === '/') {
+        const previous = result.at(-1), before = result.at(-2);
+        if (previous?.kind === '{') fail('ambiguous slash after brace');
+        const control = previous?.kind === '(' && before?.kind === 'word' && result.at(-3)?.value !== '.'
+          && ['if', 'while', 'for', 'with', 'switch', 'catch'].includes(before.value);
+        const prefix = previous?.kind === 'word' && before?.value !== '.'
+          && ['return', 'throw', 'yield', 'await', 'void', 'typeof', 'delete', 'instanceof', 'in'].includes(previous.value);
+        const division = previous && !control && !prefix && (
+          ['word', 'string', 'template', 'regex', '(', '['].includes(previous.kind)
+          || /\d/.test(previous.value || '')
+          || (['+', '-'].includes(previous.value) && before?.value === previous.value)
+        );
+        if (division) {
+          result.push({ kind: 'punct', idx, value: '/' });
+          pos++;
+          continue;
+        }
+        pos++;
+        let inClass = false, closed = false;
+        while (pos < text.length) {
+          const ch = text[pos++];
+          if (/[\r\n\u2028\u2029]/.test(ch)) fail('newline in regex');
+          if (ch === '\\') { pos++; continue; }
+          if (ch === '[') inClass = true;
+          else if (ch === ']') inClass = false;
+          else if (ch === '/' && !inClass) { closed = true; break; }
+        }
+        if (!closed) fail('unterminated regex');
+        const flags = pos;
+        while (/[A-Za-z]/.test(text[pos] || '') && pos < text.length) pos++;
+        if (text.slice(flags, pos).includes('v')) fail('nested v-mode regex classes require a full parser');
+        result.push({ kind: 'regex', idx });
+        continue;
+      }
+      if ('([{'.includes(c)) {
+        pos++;
+        result.push({ kind: c, idx, items: tokens({ '(': ')', '[': ']', '{': '}' }[c]) });
+      } else if (')]}'.includes(c)) {
+        fail('unmatched delimiter');
+      } else if (c === '"' || c === "'") {
+        pos++;
+        const start = pos;
+        let escaped = false;
+        while (pos < text.length && text[pos] !== c) {
+          if (/[\r\n\u2028\u2029]/.test(text[pos])) fail('newline in quoted string');
+          if (text[pos] === '\\') { escaped = true; pos++; }
+          pos++;
+        }
+        if (pos >= text.length) fail('unterminated string');
+        result.push({ kind: 'string', idx, value: escaped ? undefined : text.slice(start, pos) });
+        pos++;
+      } else if (c === '`') {
+        pos++;
+        const items = [];
+        while (pos < text.length && text[pos] !== '`') {
+          if (text[pos] === '\\') { pos += 2; continue; }
+          if (text.startsWith('${', pos)) {
+            pos += 2;
+            items.push({ kind: 'interpolation', items: tokens('}') });
+          } else pos++;
+        }
+        if (pos >= text.length) fail('unterminated template');
+        pos++;
+        result.push({ kind: 'template', idx, items });
+      } else if (/[A-Za-z_$]/.test(c)) {
+        pos++;
+        while (pos < text.length && /[\w$]/.test(text[pos])) pos++;
+        result.push({ kind: 'word', idx, value: text.slice(idx, pos) });
+      } else {
+        if (c === '\\' || c.charCodeAt(0) > 127) fail('unsupported lexical syntax under model selection');
+        result.push({ kind: 'punct', idx, value: c });
+        pos++;
+      }
+    }
+    if (end) fail('unterminated group');
+    return result;
+  }
+  const commaParts = items => {
+    const parts = [[]];
+    for (const token of items) {
+      if (token.value === ',' && token.kind === 'punct') parts.push([]);
+      else parts[parts.length - 1].push(token);
+    }
+    if (!parts[parts.length - 1].length) parts.pop();
+    return parts;
+  };
+  const calls = [];
+  function visit(items) {
+    for (let i = 0; i < items.length; i++) {
+      const token = items[i], previous = items[i - 1], next = items[i + 1];
+      if ((['[', '('].includes(token.kind) && next?.kind === '(')
+          || (token.kind === 'word' && ['eval', 'Function', 'import', 'require'].includes(token.value))) {
+        fail('opaque callees and dynamic code loading cannot be checked under selection');
+      }
+      if (token.kind === '[' && token.items.some(item => item.kind === 'string' && item.value === 'agent')) {
+        fail('computed agent references are not supported');
+      }
+      if (token.kind === 'word' && token.value === 'agent') {
+        if (next?.kind !== '(' || ['.', 'function', 'new'].includes(previous?.value)) {
+          fail('agent must be a direct call, not an alias, member, or declaration');
+        }
+        const args = commaParts(next.items);
+        if (args.length !== 2 || !args[0].length || args[1].length !== 1 || args[1][0].kind !== '{') {
+          fail('agent requires a prompt and one literal options object');
+        }
+        const fields = new Map();
+        for (const part of commaParts(args[1][0].items)) {
+          const [key, colon, ...value] = part;
+          if (!key || !['word', 'string'].includes(key.kind) || key.value === undefined
+              || colon?.value !== ':' || !value.length || fields.has(key.value) || key.value === '__proto__') {
+            fail('options require unique plain keys; spread, computed keys, getters and shorthand are unsupported');
+          }
+          fields.set(key.value, value);
+        }
+        const literal = key => {
+          const value = fields.get(key);
+          if (value?.length !== 1 || value[0].kind !== 'string' || value[0].value === undefined) {
+            fail(`agent options.${key} must be an explicit unescaped string literal`);
+          }
+          return value[0].value;
+        };
+        calls.push({ id: literal('phase'), model: literal('model') });
+      }
+      if (token.items) visit(token.items);
+    }
+  }
+  visit(tokens());
+  if (!calls.length) fail('no literal agent calls to check against selection');
+  return calls;
+}
+
+function lint(text, selection) {
   const violations = [];
   const V = (rule, idx, msg, severity = 'error') =>
     violations.push({ rule, loc: `line ${lineOf(text, idx)}`, msg, severity });
+  if (selection !== undefined) {
+    try {
+      for (const error of validateSelection(selection, selectedCalls(text))) V('R8-model-selection', 0, error);
+    } catch (error) {
+      V('R8-model-selection', 0, `model-selection: ${error.message}`);
+    }
+  }
 
   // ── R1: meta 순수 리터럴 ──
   const metaIdx = text.indexOf('export const meta');
@@ -58,7 +220,7 @@ function lint(text) {
 
   for (const c of calls) {
     // R3: model 핀 — 모든 agent() 필수 (기존 Step 4-W 규칙 3)
-    if (!/\bmodel\s*:/.test(c.body))
+    if (selection === undefined && !/\bmodel\s*:/.test(c.body))
       V('R3-model-pin', c.idx, 'agent() 호출에 model 핀 없음 — 세션 모델 상속으로 비용 폭증 위험');
     // R2: 팬아웃 agent()는 schema 필수 + 빈 껍데기({}) 금지 (종합 단일 콜은 예외)
     if (c.inFanout) {
@@ -137,8 +299,24 @@ function lint(text) {
   };
 }
 
-const { text, name } = readInput();
-const report = lint(text);
-report.target = name;
-console.log(JSON.stringify(report, null, 2));
-process.exit(report.pass ? 0 : 1);
+try {
+  const args = process.argv.slice(2);
+  let input, selection;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--models-json') {
+      if (selection !== undefined || i + 1 === args.length) throw new Error('Require one --models-json JSON value');
+      selection = JSON.parse(args[++i]);
+    } else if (input === undefined && (!args[i].startsWith('-') || args[i] === '-')) input = args[i];
+    else throw new Error(`Unknown argument: ${args[i]}`);
+  }
+  const { text, name } = readInput(input);
+  const report = lint(text, selection);
+  report.target = name;
+  console.log(JSON.stringify(report, null, 2));
+  process.exitCode = report.pass ? 0 : 1;
+} catch (error) {
+  console.log(JSON.stringify({ pass: false, violations: [
+    { rule: 'R8-model-selection', loc: 'input', msg: error.message, severity: 'error' },
+  ], checklist: [] }));
+  process.exitCode = 1;
+}

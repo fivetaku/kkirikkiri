@@ -7,7 +7,7 @@ INPUT=$(cat)
 command -v python3 >/dev/null 2>&1 || exit 0
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 python3 -B - "$INPUT" "$SCRIPT_DIR" << 'PY'
-import json, sys, os, re, datetime
+import json, sys, os, re, datetime, subprocess
 sys.path.insert(0, sys.argv[2])
 from gate_ledger import resolve_ledger, session_id
 try:
@@ -20,8 +20,21 @@ cwd = d.get("cwd") or os.getcwd()
 target = resolve_ledger(cwd, session_id(d))
 if not target:
     sys.exit(0)
-open_ledger, _ = target
+open_ledger, ledger = target
 ti = d.get("tool_input") or {}
+if "model_selection" in ledger:
+    validator = os.path.join(sys.argv[2], "..", "..", "scripts", "model-selection.js")
+    try:
+        checked = subprocess.run(["node", validator], input=json.dumps({
+            "selection": ledger["model_selection"],
+            "id": ti.get("name") or ti.get("description"), "model": ti.get("model")
+        }), text=True, capture_output=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        print(f"[kkirikkiri gate-spawn] model-selection: validator unavailable: {error}", file=sys.stderr)
+        sys.exit(2)
+    if checked.returncode:
+        print("[kkirikkiri gate-spawn] " + (checked.stderr.strip() or "model-selection: validation failed"), file=sys.stderr)
+        sys.exit(2)
 p = json.dumps(ti, ensure_ascii=False)
 has_tools = bool(re.search(r"(허용 도구|tools\s*[:=]|allowlist|read-?only|읽기 ?전용|review_mode)", p, re.I))
 has_scope = bool(re.search(r"(write_scope|쓰기 소유|소유 영역|쓰기 ?범위|밖 파일 쓰기 금지|read-?only|읽기 ?전용)", p, re.I))

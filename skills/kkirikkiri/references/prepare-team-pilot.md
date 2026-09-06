@@ -25,6 +25,10 @@
   "mode": "teams",
   "team_name": "task-directory-label",
   "approval": {"revision": 1, "mode": "teams"},
+  "model_selection": {
+    "profile": "custom",
+    "models": {"builder": "sonnet", "critic": "opus"}
+  },
   "acceptance": [{"id": "A1", "description": "승인된 구체적 완료 기준"}],
   "tasks": [
     {
@@ -57,8 +61,12 @@
 }
 ```
 
-식별자는 영문·숫자·점·밑줄·하이픈을 사용한다. 모델은 opus/sonnet/haiku 중 명시한다.
-작업 성격에 따른 모델 선택은 기존 정책을 따르며 준비기가 저가 모델로 바꾸지 않는다.
+식별자는 영문·숫자·점·밑줄·하이픈을 사용한다. 모델은 네이티브 별칭
+opus/sonnet/fable을 명시한다. haiku는 사용자 명시 요청 때만 허용한다.
+Fable 전체 ID는 Agent 인자가 아니므로 실제 응답 모델 기록과 구분한다.
+`model-selection.md`의 AskUserQuestion 응답이나 명시된 사용자 선택을 task.id별
+`model_selection.models`에 넣고 각 task.model과 일치시킨다. 준비기는 선택과 다르면
+거부하며 추천값으로 고쳐 실행하지 않는다. 모델 변경은 새 승인을 받은 뒤 기록한다.
 본문 도메인 정보는 `instruction`에 보존한다. 카드의 단일행 메타데이터는 기존
 card-lint 문법을 만족해야 한다. 준비기는 실제 card-lint 검사를 재사용하며,
 지원하지 않는 필드나 호환되지 않는 값을 조용히 버리지 않고 거부한다.

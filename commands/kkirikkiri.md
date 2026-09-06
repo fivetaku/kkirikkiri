@@ -93,3 +93,7 @@ Read the skill, then load references only when the selected step needs them:
    - Agent Teams → Step 4~8 (팀 구성·실행·Ralph 검증)
    - Workflow → Step 4-W/6-W/7-W/8-W (워크플로우 스크립트 구성·실행·내부 검증)
    - Workflow 도구는 사용자가 "Workflow"를 골랐을 때만 호출한다
+   - Teams·Workflow 모두 구성 확인 AskUserQuestion에 모델 선택을 함께 넣는다
+     (`references/model-selection.md`). 이미 지정한 모델은 재질문하지 않는다.
+   - 모델 선택을 장부와 실행 계획에 저장하고 실제 호출에서 보존한다. 추천값으로 되돌리거나
+     사용 불가 모델을 승인 없이 대체하지 않는다.

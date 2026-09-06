@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { lintCard } = require('./card-lint.js');
+const { validateSelection, isSupportedModel } = require('./model-selection.js');
 
 const TOOLS = new Set(['Read', 'Grep', 'Glob', 'Write', 'Edit', 'Bash', 'WebSearch', 'WebFetch']);
 const ARCHETYPES = new Set(['Builder', 'Writer', 'Designer', 'Researcher', 'Analyst', 'Critic']);
@@ -29,6 +30,10 @@ function prepare(plan) {
       || !Array.isArray(plan?.tasks) || plan.tasks.length < 2 || plan.tasks.length > 6) {
     return { pass: false, errors: [...errors, 'Require acceptance criteria and 2-6 independent tasks'] };
   }
+  if (Object.hasOwn(plan, 'model_selection')) {
+    errors.push(...validateSelection(plan.model_selection,
+      plan.tasks.map(task => ({ id: task?.id, model: task?.model }))));
+  }
   const criteria = new Map();
   for (const criterion of plan.acceptance) {
     if (!identifier(criterion?.id) || !text(criterion.description) || criteria.has(criterion.id)) {
@@ -48,7 +53,7 @@ function prepare(plan) {
     if (!identifier(task.id) || names.has(task.id)) errors.push('Task IDs must be unique');
     names.add(task.id);
     if (!oneLine(task.role) || !oneLine(task.domain) || !ARCHETYPES.has(task.archetype)
-        || !['opus', 'sonnet', 'haiku'].includes(task.model) || !oneLine(task.effort)
+        || !isSupportedModel(task.model) || !oneLine(task.effort)
         || !text(task.instruction) || !Number.isInteger(task.stop?.maxTurns)
         || task.stop.maxTurns < 1 || !oneLine(task.stop.done_when)) {
       errors.push(`${task.id}: explicit role/domain/model/effort/instruction/stop required`);

@@ -87,6 +87,16 @@ Natural language input
 
 ## Características
 
+### Elegir modelos de trabajo
+
+Teams y Workflow preguntan por los modelos al confirmar la configuración:
+Fable, Opus, Sonnet o selección por rol. Se conservan las asignaciones
+explícitas sin volver a preguntarlas ni sustituir modelos no disponibles.
+El modelo anfitrión no cambia. [Reglas](skills/kkirikkiri/references/model-selection.md)
+Se marca la opción recomendada. Fable usa el alias nativo `fable` del anfitrión.
+El ID observado se registra por separado; no fija una versión exacta.
+Haiku solo se utiliza si se solicita explícitamente.
+
 ### Presets
 
 Cinco presets integrados con coincidencia de disparadores en lenguaje natural:
