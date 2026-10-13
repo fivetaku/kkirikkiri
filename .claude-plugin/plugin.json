@@ -1,6 +1,6 @@
 {
   "name": "kkirikkiri",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "description": "Natural language team builder for Claude Code — choose Agent Teams or Workflows and select Fable, Opus, Sonnet, or per-role models. Preserves approved model assignments; Haiku is opt-in.",
   "author": {
     "name": "fivetaku",
@@ -17,5 +17,8 @@
     "natural-language",
     "interview-driven",
     "multi-model"
+  ],
+  "dependencies": [
+    "gptaku-core"
   ]
 }
