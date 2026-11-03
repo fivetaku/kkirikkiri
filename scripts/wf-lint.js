@@ -260,15 +260,16 @@ function lint(text, selection) {
   if (usesSchema && !/(search_count|_count\b|budget)/.test(text))
     V('R5-budget-field', 0, 'schema에 예산 회계 필드(search_count 등) 없음 — 세션 200캡은 조용한 빈 결과라 회계 필수');
 
-  // ── R6: 폭 초과 — 리터럴 배열 팬아웃 폭 >6 ──
+  // ── R6: 폭 초과 — 리터럴 배열 팬아웃 폭 >12 (2026-11-03: 6→12, 14일 실측 429 ≤0.8%; workflowSizeGuideline large) ──
+  const R6_MAX_WIDTH = 12;
   const arrRe = /const\s+(\w+)\s*=\s*\[/g;
   while ((m = arrRe.exec(text)) !== null) {
     const body = balancedSlice(text, m.index + m[0].length - 1, '[', ']', 20000);
     const items = (body.match(/^\s*\{/gm) || []).length;
     const usedInParallel = new RegExp(`parallel\\s*\\(\\s*${m[1]}\\b`).test(text) ||
       new RegExp(`${m[1]}\\s*\\.map`).test(text);
-    if (usedInParallel && items > 6)
-      V('R6-width', m.index, `팬아웃 폭 ${items} > 6 — 배치 분할 필요 (rate-limit 가드)`);
+    if (usedInParallel && items > R6_MAX_WIDTH)
+      V('R6-width', m.index, `팬아웃 폭 ${items} > ${R6_MAX_WIDTH} — 배치 분할 필요 (rate-limit 가드)`);
   }
   // slice(0, N) 폭 신호는 parallel(변수.map ...)의 그 변수 정의 체인에서만 읽는다
   // (문자열 truncation slice 오탐 방지 — 2026-08-30 fixture 보정)
@@ -279,8 +280,8 @@ function lint(text, selection) {
     if (!def) continue;
     const sl = /\.slice\s*\(\s*0\s*,\s*(\d+)\s*\)\s*(?:\/\/[^\n]*)?\s*$/m.exec(def[1].trim());
     const cap = sl ? parseInt(sl[1], 10) : null;
-    if (cap !== null && cap > 6)
-      V('R6-width', def.index, `팬아웃 변수 ${m[1]}의 slice 상한 ${cap} > 6 — 확장 폭 초과`);
+    if (cap !== null && cap > R6_MAX_WIDTH)
+      V('R6-width', def.index, `팬아웃 변수 ${m[1]}의 slice 상한 ${cap} > ${R6_MAX_WIDTH} — 확장 폭 초과`);
   }
 
   // ── R7: 검증(refute) 스테이지 부재 — 경고 ──

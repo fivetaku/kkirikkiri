@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.26.3 (2026-11-03)
+- **wf-lint R6 팬아웃 폭 상한 6 → 12** (`R6_MAX_WIDTH`). 14일 세션 로그 실측 429 ≤0.8%, `workflowSizeGuideline: large`에 맞춤. 픽스처 폭 10 통과·폭 13 위반 확인.
+
 ## 0.26.2 (2026-10-14)
 - **gptaku-core 라우팅 조정.** 실제 대화에서 잘못 지목된 사례에 맞춰 `routing.json`의 키워드·제외어를 고쳤다. gptaku-core 0.1.1과 함께 적용된다.
 
