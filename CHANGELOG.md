@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.26.4 (2026-11-08)
+- **gate-wf 범위를 끼리끼리 런으로 한정.** 이 세션의 열린 장부가 없으면 wf-lint를 돌리지 않고 통과한다. 그동안 matcher `Workflow`가 모든 워크스페이스의 일반 Workflow 호출까지 검사해 hooks.log 기준 365건 중 156건을 차단했다. 장부 없음 rc=0, 장부 있음 rc=2 확인.
+
 ## 0.26.3 (2026-11-03)
 - **wf-lint R6 팬아웃 폭 상한 6 → 12** (`R6_MAX_WIDTH`). 14일 세션 로그 실측 429 ≤0.8%, `workflowSizeGuideline: large`에 맞춤. 픽스처 폭 10 통과·폭 13 위반 확인.
 

@@ -2,6 +2,7 @@
 # gate-wf.sh — PreToolUse(Workflow) 훅: Workflow 도구 호출 직전에 스크립트를 wf-lint로 검사한다.
 # 위반 시 exit 2 → 도구 호출 차단 + stderr가 Claude에게 전달된다. (v0.24.0 — 게이트를 SKILL 텍스트에서 하네스 계층으로 이관)
 # 가드: Workflow 이외 도구·스크립트 없음이면 즉시 exit 0 (다른 세션·워크스페이스에 부담 0).
+# 범위: 이 세션의 열린 끼리끼리 장부가 없으면(=/kkirikkiri 런이 아니면) 검사하지 않고 통과한다. (v0.26.4)
 INPUT=$(cat)
 ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 command -v python3 >/dev/null 2>&1 || exit 0
@@ -17,11 +18,15 @@ except ValueError:
 if data.get("tool_name") != "Workflow":
     sys.exit(0)
 target = resolve_ledger(data.get("cwd") or os.getcwd(), session_id(data))
+if not target:
+    sys.exit(3)  # 끼리끼리 런이 아님 — 일반 Workflow는 린트하지 않는다
 if target and "model_selection" in target[1]:
     print(json.dumps(target[1]["model_selection"], ensure_ascii=False))
 PY
 )
-[ "$?" -eq 0 ] || exit 2
+RC=$?
+[ "$RC" -eq 3 ] && exit 0
+[ "$RC" -eq 0 ] || exit 2
 if ! command -v node >/dev/null 2>&1; then
   [ -z "$MODELS" ] && exit 0
   echo '[kkirikkiri gate-wf] model-selection: node validator unavailable' >&2
