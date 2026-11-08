@@ -646,6 +646,16 @@ presets.md의 질문은 누락된 정보를 찾기 위한 예시다. 추가 질�
 
 Workflow 도구 호출 시 PreToolUse 훅이 스크립트를 wf-lint로 검사하고 **위반이면 호출을 차단**한다 — 돌아온 사유(R1~R7)를 고치고 다시 호출한다. 사전 자가점검: `node "${CLAUDE_PLUGIN_ROOT}/scripts/wf-lint.js" <초안.js>`. checklist C1~C3 자답을 장부 `lint_report`에 기록.
 
+**첫 발사 선통과 체크** — 발사 전에 아래를 맞추면 차단 재작성 턴이 없어진다(2026-11-08, SKILL을 주입하지 않은 일반 세션 기준 짝 실험에서 첫 발사 차단 4/4 → 0/4):
+
+- R3: 모든 agent 호출 옵션에 model 문자열 리터럴(값은 W1.5 선택 맵, 위 "실제 `model`과 `phase`는 선택 맵과 일치하는 문자열 리터럴" 항목).
+- R2: `.map` 안에서 부르는 agent에는 필드 1개 이상인 schema.
+- R5: schema에 `search_count` 같은 `*_count` 숫자 필드 하나.
+- R6: parallel이나 `.map`에 넘기는 리터럴 배열은 12개 이하.
+- R1: meta는 순수 리터럴이고, meta 문자열 안에 괄호·백틱·`${`를 쓰지 않는다.
+- R4: `flatMap` 뒤 300자 안에 `.slice(`가 오면 막힌다. 상한은 축별 쿼터로 자르고, 문자열 자르기는 떨어진 함수로 뺀다.
+- 프롬프트 문자열 안에 agent 뒤에 여는 괄호가 붙은 글자를 쓰지 않는다(호출로 읽힌다).
+
 ### 스크립트 구성 규칙
 
 1. **`meta` 블록**: `name`(kebab-case), `description`(한 줄), `phases`(스테이지별 title) — 순수 리터럴로 작성.
@@ -679,10 +689,12 @@ export const meta = {
   description: '[목표 한 줄]',
   phases: [
     { title: '수집' },     // Sonnet 팬아웃
-    { title: '검증' },     // adversarial-verify (refute)
+    { title: '검증' },     // adversarial-verify — refute
     { title: '종합' },     // Opus
   ],
 }
+const FINDING_SCHEMA = { type: 'object', properties: { finding: { type: 'string' }, search_count: { type: 'number' } }, required: ['finding', 'search_count'] }
+const VERDICT_SCHEMA = { type: 'object', properties: { refuted: { type: 'boolean' }, reason: { type: 'string' }, check_count: { type: 'number' } }, required: ['refuted', 'check_count'] }
 phase('수집')
 const found = await parallel(SOURCES.map(s => () =>
   agent(`[조사 지시] ${s}`, {model: 'sonnet', phase: '수집', schema: FINDING_SCHEMA})))
