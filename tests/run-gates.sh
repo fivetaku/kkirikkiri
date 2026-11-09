@@ -67,10 +67,17 @@ hook_exit() { # <이름> <기대exit> <스크립트> <json>
   printf '%s' "$4" | bash "$3" >/dev/null 2>&1; local rc=$?
   if [ "$rc" -eq "$2" ]; then note "  PASS  $1 (exit $rc)"; else note "  FAIL  $1 — 기대 exit $2, 실제 $rc"; FAIL=1; fi
 }
-WF_DEFECT=$(python3 -c "import json;print(json.dumps({'tool_name':'Workflow','tool_input':{'script':open('tests/fixtures/wf-defect-20260829.js').read()}}))")
-WF_CLEAN=$(python3 -c "import json;print(json.dumps({'tool_name':'Workflow','tool_input':{'script':open('tests/fixtures/wf-clean.js').read()}}))")
-hook_exit "gate-wf defect 차단" 2 hooks/scripts/gate-wf.sh "$WF_DEFECT"
-hook_exit "gate-wf clean 통과" 0 hooks/scripts/gate-wf.sh "$WF_CLEAN"
+# gate-wf는 이 세션의 열린 끼리끼리 장부가 있을 때만 검사한다 (v0.26.4). cwd를 격리 디렉터리로 고정해
+# 러너 상위 경로의 실제 장부가 결과에 섞이지 않게 한다.
+WL="$OUT/h-wf-ledger"; WN="$OUT/h-wf-none"; mkdir -p "$WL/.kkirikkiri/runs" "$WN"
+printf '{"outcome": null, "session_id": "wf-sess"}\n' > "$WL/.kkirikkiri/runs/20261108_000000.json"
+wf_input() { # <픽스처> <cwd> <session_id>
+  python3 -c "import json,sys;print(json.dumps({'tool_name':'Workflow','cwd':sys.argv[2],'session_id':sys.argv[3],'tool_input':{'script':open(sys.argv[1]).read()}}))" "$1" "$2" "$3"
+}
+hook_exit "gate-wf 장부 있음 defect 차단" 2 hooks/scripts/gate-wf.sh "$(wf_input tests/fixtures/wf-defect-20260829.js "$WL" wf-sess)"
+hook_exit "gate-wf 장부 있음 clean 통과" 0 hooks/scripts/gate-wf.sh "$(wf_input tests/fixtures/wf-clean.js "$WL" wf-sess)"
+hook_exit "gate-wf 장부 없음 defect 비검사 통과" 0 hooks/scripts/gate-wf.sh "$(wf_input tests/fixtures/wf-defect-20260829.js "$WN" wf-sess)"
+hook_exit "gate-wf 다른 세션 장부 defect 비검사 통과" 0 hooks/scripts/gate-wf.sh "$(wf_input tests/fixtures/wf-defect-20260829.js "$WL" other-sess)"
 hook_exit "gate-wf 비대상 도구" 0 hooks/scripts/gate-wf.sh '{"tool_name":"Read","tool_input":{"file_path":"/x"}}'
 HA="$OUT/h-agents"; mkdir -p "$HA/d/agents" "$HA/c/agents"
 cp tests/fixtures/cards-defect/*.md "$HA/d/agents/"; cp tests/fixtures/cards-clean/*.md "$HA/c/agents/"
