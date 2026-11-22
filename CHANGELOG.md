@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.27.0 (2026-11-22)
+- Single card template with boundary block first
+- Common delegation brief
+- SKILL.md 1657 to 698 lines
+
 ## 0.26.5 (2026-11-08)
 - **SKILL 예시 스크립트 골격이 자기 wf-lint에 막히던 버그 수정.** meta 주석의 괄호가 R1-meta에, 예시에 없던 `FINDING_SCHEMA`·`VERDICT_SCHEMA`(예산 필드 포함)가 R5에 걸렸다. 주석을 고치고 두 schema 정의를 골격에 넣었다. 수정 전 골격 lint 위반 R1·R5, 수정 후 위반 0.
 - **W2에 '첫 발사 선통과 체크' 7줄 추가.** R1~R6와 프롬프트 안 호출 오인 문자열을 발사 전에 맞추게 한다. SKILL을 주입하지 않은 일반 세션 짝 실험에서 이 체크를 준 세션은 첫 발사 차단 0/4, 안 준 세션 4/4였다(끼리끼리 런 안의 효과는 아직 미측정).
