@@ -62,7 +62,7 @@ gate-spawn은 통과 시 선언을 장부 `declarations[{agent, write_scope, rea
 | **C5** | **카드 간 write_scope 교집합 금지** — 공유 파일은 소유자 1명 지정, 나머지는 변경 요청 |
 
 수동 실행: `node "${CLAUDE_PLUGIN_ROOT}/scripts/card-lint.js" --dir "{KKIRIKKIRI_DIR}/agents"`.
-경계 블록 필드 정의는 `subagent-synthesis.md` [4] 참조. 페르소나는 스타일 층, 능력·권한은 경계 블록.
+경계 블록 필드 정의는 `card-template.md` §1 참조. 페르소나는 스타일 층, 능력·권한은 경계 블록.
 
 ## 3. done-gate — 완료 직전 (Stop 훅 `gate-done.sh`)
 

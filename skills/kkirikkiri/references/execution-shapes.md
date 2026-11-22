@@ -11,6 +11,8 @@ Step 4-W의 기존 규칙(**모델 핀 필수 / adversarial-verify 필수 / sche
 역할도 예외가 아니다. 선택한 모델이 사용 불가하면 임의 대체하지 않고 다시 선택받는다.
 Haiku는 기본 추천에서 제외하고 사용자 명시 요청 때만 사용한다.
 
+**모든 agent 프롬프트는 공통 최소 브리프를 쓴다** (`card-template.md` §2): 목표 / 반환 형식 / 도구 지침 / 범위 밖 / 노력 예산. 아래 예시의 `brief()`는 SKILL.md Step 4-W 골격에 정의된 조립 함수다. 한 줄 지시("[조사 지시] X")로 보내지 않는다.
+
 ---
 
 ## 5종 요약
@@ -34,7 +36,9 @@ Haiku는 기본 추천에서 제외하고 사용자 명시 요청 때만 사용�
 ```javascript
 phase('수집')
 const found = await parallel(SOURCES.map(s => () =>
-  agent(`[조사 지시] ${s}`, {model: 'sonnet', phase: '수집', schema: FINDING_SCHEMA})))
+  agent(brief(`${s} 에 대해 [조사 질문]에 답한다`, 'FINDING_SCHEMA JSON, 주장마다 출처 URL',
+    '1차 출처 우선, GUI 브라우저 금지', '다른 소스 조사와 종합', '툴콜 10회 이내'),
+    {model: 'sonnet', phase: '수집', schema: FINDING_SCHEMA})))
 ```
 
 `parallel()`은 **배리어**다 — 전부 끝나야 다음 줄로 간다. 배리어가 필요 없으면 `pipeline()`을 쓴다.
@@ -50,7 +54,8 @@ phase('직렬')
 let carry = null
 for (const step of STEPS) {
   carry = await agent(
-    `이전 결과: ${JSON.stringify(carry)}\n다음 작업: ${step.prompt}`,
+    brief(`이전 결과를 입력으로 ${step.prompt}`, 'STEP_SCHEMA JSON', '이전 결과만 근거로 사용',
+      '다음 단계 작업', '툴콜 8회 이내') + `\n이전 결과: ${JSON.stringify(carry)}`,
     {model: 'sonnet', phase: '직렬', label: `serial:${step.key}`, schema: STEP_SCHEMA})
 }
 ```
@@ -67,13 +72,15 @@ for (const step of STEPS) {
 ```javascript
 phase('플랜 A')
 const a = (await parallel(ITEMS.map(i => () =>
-  agent(`A단계: ${i}`, {model: 'sonnet', phase: '플랜 A', schema: A_SCHEMA})))).filter(Boolean)
+  agent(brief(`A단계: ${i} 를 처리한다`, 'A_SCHEMA JSON', '[도구 지침]', 'B단계 작업', '[툴콜 상한]'),
+    {model: 'sonnet', phase: '플랜 A', schema: A_SCHEMA})))).filter(Boolean)
 
 const deduped = dedupe(a)          // ← 배리어가 정당한 이유: 전체를 한 번에 봐야 함
 
 phase('플랜 B')
 const b = await parallel(deduped.map(x => () =>
-  agent(`B단계: ${JSON.stringify(x)}`, {model: 'sonnet', phase: '플랜 B', schema: B_SCHEMA})))
+  agent(brief(`B단계: 다음 항목을 처리한다 ${JSON.stringify(x)}`, 'B_SCHEMA JSON', '[도구 지침]', '다른 항목', '[툴콜 상한]'),
+    {model: 'sonnet', phase: '플랜 B', schema: B_SCHEMA})))
 ```
 
 **배리어가 정당한 경우는 셋뿐이다**: 전체 대상 dedup/merge, 총계 0이면 조기 종료,
@@ -89,16 +96,18 @@ const b = await parallel(deduped.map(x => () =>
 ```javascript
 phase('자식')
 const children = (await parallel(SUBQUESTIONS.map(q => () =>
-  agent(`하위 질문: ${q}`, {model: 'sonnet', phase: '자식', schema: CHILD_SCHEMA}))))
+  agent(brief(`하위 질문에 답한다: ${q}`, 'CHILD_SCHEMA JSON, 출처 포함', '[도구 지침]', '다른 하위 질문과 부모 결론', '[툴콜 상한]'),
+    {model: 'sonnet', phase: '자식', schema: CHILD_SCHEMA}))))
   .filter(Boolean)
 
 phase('검증')
 const verified = await parallel(children.map(c => () =>
-  agent(`다음을 반박하라(refute). 확신 없으면 refuted=true: ${JSON.stringify(c)}`,
+  agent(brief(`다음을 반박하라(refute). 확신 없으면 refuted=true: ${JSON.stringify(c)}`, 'VERDICT_SCHEMA JSON',
+          '출처 원문 재확인', '새 주제 조사', '툴콜 5회 이내'),
         {model: 'sonnet', phase: '검증', schema: VERDICT_SCHEMA})))
 
 phase('부모')
-return await agent(`검증 통과 결과만으로 부모 결론을 내라: ...`,
+return await agent(brief('검증 통과 결과만으로 부모 결론을 낸다', '마크다운 결론, 미확인 분리', '추가 검색 없음', '반박된 결과 인용', '한 번에 작성'),
                    {model: 'opus', phase: '부모'})
 ```
 

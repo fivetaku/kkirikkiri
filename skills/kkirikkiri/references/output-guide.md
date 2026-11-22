@@ -34,6 +34,16 @@
 
 ## 팀 저장 파일 형식 (Step 8-3)
 
+질문 (SKILL.md에서 옮김 — 그대로 AskUserQuestion 호출):
+
+```json
+{"questions": [{"question": "이 팀 구성을 저장해둘까요? 나중에 비슷한 작업할 때 바로 불러올 수 있어요.", "header": "팀 저장", "multiSelect": false, "options": [
+  {"label": "네, 저장해주세요", "description": "다음에 비슷한 작업할 때 인터뷰 없이 바로 시작할 수 있어요."},
+  {"label": "아니요, 괜찮아요", "description": "이번만 사용하고 저장하지 않아요."}
+]}]}
+```
+
+
 저장 경로: `{프로젝트루트}/.kkirikkiri/shared/saved-teams/{team_name}.md`
 
 ```markdown
@@ -77,6 +87,16 @@
 ---
 
 ## 팀원 에이전트 저장 절차 (Step 8-3-1)
+
+질문 (SKILL.md에서 옮김 — 그대로 AskUserQuestion 호출):
+
+```json
+{"questions": [{"question": "잘 동작한 팀원을 에이전트로 저장할까요? 다른 프로젝트에서도 바로 쓸 수 있어요.", "header": "에이전트 저장", "multiSelect": false, "options": [
+  {"label": "네, 저장할게요", "description": "팀원의 역할과 능력을 에이전트 파일로 저장해요. 다음에 팀을 만들 때 자동으로 감지돼요."},
+  {"label": "괜찮아요", "description": "이번만 쓰고 저장하지 않아요."}
+]}]}
+```
+
 
 ### 저장 처리 순서
 
