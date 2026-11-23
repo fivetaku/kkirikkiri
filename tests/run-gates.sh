@@ -136,5 +136,27 @@ ok = ok and rec and rec[0]['write_scope']==['repo/CONVENTIONS.md','repo/manifest
 sys.exit(0 if ok else 1)" \
   && note "  PASS  gate-spawn 통과 시 선언(write_scope·read_only) 장부 기록 (지표 v2 자동화 입력)" || { note "  FAIL  gate-spawn declarations 기록 불일치"; FAIL=1; }
 
+note "── Codex 형식 입력 (spawn_agent / apply_patch) ──"
+# gate-spawn: Codex는 tool_name=spawn_agent, tool_input.message. 위 HI 장부(열린 세션 장부 없는 id 무관 legacy)를 재사용한다.
+hook_exit "codex spawn_agent 경계 없음 차단" 2 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"spawn_agent\",\"tool_input\":{\"message\":\"'17 곱하기 23'을 계산하고 결과만 알려줘.\"}}"
+hook_exit "codex spawn_agent 경계 있음 통과" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"spawn_agent\",\"tool_input\":{\"message\":\"허용 도구: Read, Write. write_scope: codex-out/**. stop: maxTurns 5, done_when 계산 완료\"}}"
+hook_exit "codex spawn_agent 장부 없는 cwd 무동작" 0 hooks/scripts/gate-spawn.sh '{"cwd":"/tmp","tool_name":"spawn_agent","tool_input":{"message":"아무거나"}}'
+hook_exit "codex 비대상 도구(Bash) 무동작" 0 hooks/scripts/gate-spawn.sh "{\"cwd\":\"$HI\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"ls\"}}"
+python3 -c "
+import json,sys; d=json.load(open('$L'))
+ok = any(x['agent'].startswith('spawn_agent-') and x['write_scope']==['codex-out/**'] for x in d.get('declarations',[])) and any(v.get('gate')=='spawn' and str(v.get('agent','')).startswith('spawn_agent-') for v in d.get('boundary_violations',[]))
+sys.exit(0 if ok else 1)" \
+  && note "  PASS  codex spawn_agent 선언·위반이 장부에 기록" || { note "  FAIL  codex spawn_agent 장부 기록 불일치"; FAIL=1; }
+# gate-card: apply_patch 본문의 Update/Add File 줄에서 카드 파일을 찾아 card-lint
+patch_input() { # <cwd> <본문줄...>
+  python3 -c "import json,sys;print(json.dumps({'tool_name':'apply_patch','cwd':sys.argv[1],'tool_input':{'command':'*** Begin Patch\n'+'\n'.join(sys.argv[2:])+'\n*** End Patch'}}))" "$@"
+}
+hook_exit "codex apply_patch 결함 카드 Update → 차단" 2 hooks/scripts/gate-card.sh "$(patch_input "$HA" "*** Update File: $HA/d/agents/감사자.md" "@@" "-x" "+y")"
+hook_exit "codex apply_patch 결함 카드 Add(절대경로) → 차단" 2 hooks/scripts/gate-card.sh "$(patch_input "$HA" "*** Add File: $HA/d/agents/감사자.md" "+x")"
+hook_exit "codex apply_patch 상대경로 카드(cwd 기준) → 차단" 2 hooks/scripts/gate-card.sh "$(patch_input "$HA/d" "*** Update File: agents/감사자.md" "@@" "-x" "+y")"
+hook_exit "codex apply_patch clean 카드 통과" 0 hooks/scripts/gate-card.sh "$(patch_input "$HA" "*** Update File: $HA/c/agents/감사자.md" "@@" "-x" "+y")"
+hook_exit "codex apply_patch 비카드 파일 무동작" 0 hooks/scripts/gate-card.sh "$(patch_input "$HA" "*** Add File: /tmp/cxa-note.md" "+391")"
+hook_exit "codex apply_patch 여러 파일 중 결함 카드 포함 → 차단" 2 hooks/scripts/gate-card.sh "$(patch_input "$HA" "*** Add File: /tmp/cxa-note.md" "+1" "*** Update File: $HA/d/agents/감사자.md" "@@" "-x" "+y")"
+
 if [ "$FAIL" -eq 0 ]; then note "── ALL GATES PASS ──"; else note "── GATE REGRESSION DETECTED ──"; fi
 exit "$FAIL"

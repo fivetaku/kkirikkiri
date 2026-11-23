@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.28.0 (2026-11-23)
+- Codex에서도 같은 스킬로 동작. `skills/kkirikkiri/references/codex.md` 추가(질문 도구 4단계·도구 대응·게이트 차이), SKILL.md에 실행 환경 블록과 인자 없는 호출 메뉴를 옮김(명령은 얇게).
+- 팀원 경계 게이트가 Codex `spawn_agent`(`message`)도 검사하고, 카드 검사가 `apply_patch` 본문의 `*** Update/Add File:` 대상 카드를 찾아 돈다. 훅 matcher는 `Agent|Task|spawn_agent`, `Write|Edit|MultiEdit|apply_patch`. Claude 동작은 그대로.
+- tests/run-gates.sh에 Codex 형식 입력 시험 11건 추가.
+
 ## 0.27.0 (2026-11-22)
 - Single card template with boundary block first
 - Common delegation brief

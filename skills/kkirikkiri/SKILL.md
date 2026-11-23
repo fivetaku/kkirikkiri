@@ -8,6 +8,20 @@ description: Auto-assembles and runs an AI agent team from one natural-language 
 <!-- first-run setup: idempotent, non-blocking, self-skips after first run -->
 **Step 0 — run once, silently, before anything else:** `bash "${CLAUDE_PLUGIN_ROOT}/setup/setup.sh" >/dev/null 2>&1 || true` — do not narrate or comment on it, then continue.
 
+## 실행 환경 (Claude Code / Codex)
+
+- **Claude Code**: 질문은 `AskUserQuestion`으로 한다.
+- **Codex**: 시작 전에 이 폴더의 `references/codex.md`를 읽는다(질문 도구 순서·도구 대응·게이트 차이). async 호출 형식: `{"questions":[{"title":"헤더 — 질문","options":["추천안 (추천) — 설명","대안 — 설명"]}]}` — 문항에는 `title`·`options`(문자열 배열)만, `question`·`header`·`id`는 넣지 않는다.
+- Codex에서는 `${CLAUDE_PLUGIN_ROOT}`를 이 플러그인 루트(이 SKILL.md에서 두 단계 위 폴더)로 바꿔 읽는다.
+- Codex에서 Workflow 스크립트(다중 에이전트 스크립트)를 쓸 때는 실행 전에 `wf-lint`를 스킬 단계로 직접 돌린다(Codex에는 Workflow 도구가 없어 훅이 없다).
+
+## 인자 없이 호출됐을 때
+
+요청 내용이 없으면 먼저 질문 도구로 한 번 묻는다. 질문 "어떤 팀이 필요하세요?", 선택지 3개: "팀 만들기 (추천)" — 하고 싶은 걸 자유롭게 말하면 2-3개 질문 후 최적의 팀을 구성 / "프리셋 둘러보기" — 리서치·개발·분석·콘텐츠 4종 프리셋 확인 / "사용법 안내" — 끼리끼리가 뭔지, 어떻게 쓰는지 안내. 단일 선택.
+- 팀 만들기 → 한 문장 요청을 받아 Step 1로 간다.
+- 프리셋 둘러보기 → `presets.md`를 읽고 4종 프리셋을 쉬운 한국어로 요약한 뒤 어느 것을 쓸지 묻는다.
+- 사용법 안내 → 쉬운 한국어로 (1) 하고 싶은 걸 한마디로 말하면 인터뷰 시작 (2) 2-3개 질문에 답하면 팀 자동 구성 (3) 팀 구성 확인 후 실행 (4) 완료 후 리포트 수신.
+
 > 자연어 한마디 → 인터뷰 → 환경 스캔 → 팀 구성 → 실행 → 리포트
 
 사용자의 자연어 요청을 받아 목적에 맞는 AI 에이전트 팀(Agent Teams) 또는 Workflow를 구성하고 실행한다.

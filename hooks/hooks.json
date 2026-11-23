@@ -23,7 +23,7 @@
         ]
       },
       {
-        "matcher": "Agent|Task",
+        "matcher": "Agent|Task|spawn_agent",
         "hooks": [
           {
             "type": "command",
@@ -35,7 +35,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit",
+        "matcher": "Write|Edit|MultiEdit|apply_patch",
         "hooks": [
           {
             "type": "command",

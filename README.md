@@ -30,6 +30,8 @@ Session-owned ledgers and acceptance checks prevent incidental changes from coun
 /plugin install kkirikkiri
 ```
 
+Codex: `codex plugin marketplace add fivetaku/gptaku_plugins`, then `codex plugin add kkirikkiri@gptaku-plugins`.
+
 ### 3. Enable Agent Teams
 
 ```json

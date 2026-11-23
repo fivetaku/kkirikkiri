@@ -1,5 +1,5 @@
 #!/bin/bash
-# gate-spawn.sh — PreToolUse(Agent|Task) 훅: kkirikkiri 런 컨텍스트(열린 장부)에서 팀원을 스폰할 때
+# gate-spawn.sh — PreToolUse(Agent|Task|spawn_agent) 훅: kkirikkiri 런 컨텍스트(열린 장부)에서 팀원을 스폰할 때
 # 스폰 프롬프트에 경계 블록(도구 허용목록 또는 read-only / 쓰기 소유권 / 정지 조건)이 없으면 차단한다. (v0.24.2)
 # 이유: 카드 파일 기반 card-lint는 카드를 안 쓰면 무력 — 스폰이라는 도구 호출 자체에 경계를 강제한다.
 # 가드: cwd에 열린 kkirikkiri 장부가 없으면 즉시 exit 0 (다른 세션의 Agent 호출에 영향 없음).
@@ -14,7 +14,8 @@ try:
     d = json.loads(sys.argv[1])
 except Exception:
     sys.exit(0)
-if d.get("tool_name") not in ("Agent", "Task"):
+tool = d.get("tool_name")
+if tool not in ("Agent", "Task", "spawn_agent"):
     sys.exit(0)
 cwd = d.get("cwd") or os.getcwd()
 target = resolve_ledger(cwd, session_id(d))
@@ -22,6 +23,15 @@ if not target:
     sys.exit(0)
 open_ledger, ledger = target
 ti = d.get("tool_input") or {}
+if tool == "spawn_agent":
+    # Codex: 입력은 tool_input.message(+agent_type, model). Claude 형식(name/prompt/model)으로 정규화해 같은 검사를 쓴다.
+    import hashlib
+    msg = ti.get("message")
+    if not isinstance(msg, str):
+        msg = json.dumps(ti.get("items") if ti.get("items") is not None else (msg or ""), ensure_ascii=False)
+    kind = ti.get("agent_type") or "spawn_agent"
+    ti = {"name": ti.get("name") or "%s-%s" % (kind, hashlib.sha1(msg.encode("utf-8")).hexdigest()[:6]),
+          "prompt": msg, "model": ti.get("model")}
 if "model_selection" in ledger:
     validator = os.path.join(sys.argv[2], "..", "..", "scripts", "model-selection.js")
     try:
